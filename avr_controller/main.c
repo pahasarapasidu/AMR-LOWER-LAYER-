@@ -21,7 +21,7 @@ int main(void) {
 	motors_enable_right(true);
 	motors_set_speed_left (200);
 	motors_set_speed_right(200);
-	_delay_ms(2000);
+	_delay_ms(10000);
 
 	motors_stop_all();
 

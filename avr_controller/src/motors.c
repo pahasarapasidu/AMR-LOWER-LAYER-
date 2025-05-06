@@ -40,7 +40,7 @@ void motors_init(void) {
 
 	// — Timer4 (16-bit) for RIGHT motor PUL on OC4D (PD7) —
 	TCCR4A = _BV(COM4D0);      // toggle OC4D on compare
-	TCCR4B = _BV(WGM42);       // CTC mode, no clock yet
+	TCCR4B = _BV(WGM41);       // CTC mode, no clock yet
 }
 
 void motors_enable_left(bool en) {
