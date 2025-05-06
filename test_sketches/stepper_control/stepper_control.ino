@@ -43,10 +43,10 @@ int motorSpeed = 200;           // Speed in RPM
 int motorAccel = 50;            // Acceleration in RPM per second
 
 // Motor-specific parameters
-int leftTargetSteps = 0;        // Target position for left motor
-int rightTargetSteps = 0;       // Target position for right motor
-int leftDirection = HIGH;       // HIGH = CW, LOW = CCW
-int rightDirection = HIGH;      // HIGH = CW, LOW = CCW
+int leftTargetSteps = 0;    // Target position for left motor
+int rightTargetSteps = 0;   // Target position for right motor
+int leftDirection = HIGH;   // HIGH = CW, LOW = CCW
+int rightDirection = HIGH;  // HIGH = CW, LOW = CCW
 
 // Timing variables
 unsigned long leftLastStepTime = 0;
@@ -57,31 +57,31 @@ void setup() {
   // Initialize serial communication
   Serial.begin(115200);
   while (!Serial) {
-    ; // Wait for serial port to connect (needed for Leonardo only)
+    ;  // Wait for serial port to connect (needed for Leonardo only)
   }
-  
+
   // Configure control pins for left motor
   pinMode(LEFT_PULSE_PIN, OUTPUT);
   pinMode(LEFT_DIR_PIN, OUTPUT);
   pinMode(LEFT_ENA_PIN, OUTPUT);
-  
+
   // Configure control pins for right motor
   pinMode(RIGHT_PULSE_PIN, OUTPUT);
   pinMode(RIGHT_DIR_PIN, OUTPUT);
   pinMode(RIGHT_ENA_PIN, OUTPUT);
-  
+
   // Initialize pin states
   digitalWrite(LEFT_PULSE_PIN, LOW);
   digitalWrite(LEFT_DIR_PIN, leftDirection);
   digitalWrite(LEFT_ENA_PIN, LOW);  // Enable driver (active LOW)
-  
+
   digitalWrite(RIGHT_PULSE_PIN, LOW);
   digitalWrite(RIGHT_DIR_PIN, rightDirection);
   digitalWrite(RIGHT_ENA_PIN, LOW);  // Enable driver (active LOW)
-  
+
   // Calculate initial step interval
   setSpeed(motorSpeed);
-  
+
   Serial.println("Dual CL57T(V4.1) Stepper Driver Control for Robot");
   Serial.println("Commands:");
   Serial.println("  S<rpm> - Set speed for both motors in RPM");
@@ -102,20 +102,20 @@ void setup() {
 void loop() {
   // Check for serial commands
   checkSerialCommand();
-  
+
   // Handle left motor movement
   if (leftTargetSteps != 0) {
     unsigned long currentTime = micros();
-    
+
     // Check if it's time for the next step
     if (currentTime - leftLastStepTime >= stepInterval) {
       leftLastStepTime = currentTime;
-      
+
       // Generate a pulse for left motor
       digitalWrite(LEFT_PULSE_PIN, HIGH);
       delayMicroseconds(5);  // 5µs pulse width (must be > 1µs per manual)
       digitalWrite(LEFT_PULSE_PIN, LOW);
-      
+
       // Update remaining steps
       if (leftTargetSteps > 0) {
         leftTargetSteps--;
@@ -124,20 +124,20 @@ void loop() {
       }
     }
   }
-  
+
   // Handle right motor movement
   if (rightTargetSteps != 0) {
     unsigned long currentTime = micros();
-    
+
     // Check if it's time for the next step
     if (currentTime - rightLastStepTime >= stepInterval) {
       rightLastStepTime = currentTime;
-      
+
       // Generate a pulse for right motor
       digitalWrite(RIGHT_PULSE_PIN, HIGH);
       delayMicroseconds(5);  // 5µs pulse width (must be > 1µs per manual)
       digitalWrite(RIGHT_PULSE_PIN, LOW);
-      
+
       // Update remaining steps
       if (rightTargetSteps > 0) {
         rightTargetSteps--;
@@ -148,31 +148,36 @@ void loop() {
   }
 }
 
+
+
 void checkSerialCommand() {
   if (Serial.available() > 0) {
     char cmd = Serial.read();
-    
+
     switch (cmd) {
-      case 'S': case 's':
+      case 'S':
+      case 's':
         // Set speed for both motors
         motorSpeed = Serial.parseInt();
         setSpeed(motorSpeed);
         Serial.print("Speed set to ");
         Serial.println(motorSpeed);
         break;
-        
-      case 'A': case 'a':
+
+      case 'A':
+      case 'a':
         // Set acceleration for both motors
         motorAccel = Serial.parseInt();
         Serial.print("Acceleration set to ");
         Serial.println(motorAccel);
         break;
-        
-      case 'M': case 'm':
+
+      case 'M':
+      case 'm':
         // Check the next character to determine which motor to move
         if (Serial.available() > 0) {
           char motorSelect = Serial.read();
-          
+
           if (motorSelect == 'L' || motorSelect == 'l') {
             // Move left motor
             leftTargetSteps = Serial.parseInt();
@@ -180,16 +185,14 @@ void checkSerialCommand() {
             Serial.print("Moving left motor ");
             Serial.print(abs(leftTargetSteps));
             Serial.println(leftDirection == HIGH ? " steps forward" : " steps backward");
-          }
-          else if (motorSelect == 'R' || motorSelect == 'r') {
+          } else if (motorSelect == 'R' || motorSelect == 'r') {
             // Move right motor
             rightTargetSteps = Serial.parseInt();
             setRightDirection(rightTargetSteps);
             Serial.print("Moving right motor ");
             Serial.print(abs(rightTargetSteps));
             Serial.println(rightDirection == HIGH ? " steps forward" : " steps backward");
-          }
-          else if (motorSelect == 'B' || motorSelect == 'b') {
+          } else if (motorSelect == 'B' || motorSelect == 'b') {
             // Move both motors
             int steps = Serial.parseInt();
             leftTargetSteps = steps;
@@ -202,13 +205,14 @@ void checkSerialCommand() {
           }
         }
         break;
-        
-      case 'F': case 'f':
+
+      case 'F':
+      case 'f':
         // Move forward (both motors forward)
         {
           int steps = Serial.parseInt();
           if (steps < 0) steps = -steps;  // Ensure positive for forward
-          
+
           // For differential drive, forward typically means:
           // - Left motor: positive steps
           // - Right motor: positive steps
@@ -216,19 +220,20 @@ void checkSerialCommand() {
           rightTargetSteps = steps;
           setLeftDirection(leftTargetSteps);
           setRightDirection(rightTargetSteps);
-          
+
           Serial.print("Moving forward ");
           Serial.print(steps);
           Serial.println(" steps");
         }
         break;
-        
-      case 'B': case 'b':
+
+      case 'B':
+      case 'b':
         // Move backward (both motors backward)
         {
           int steps = Serial.parseInt();
           if (steps < 0) steps = -steps;  // Ensure positive then make negative for backward
-          
+
           // For differential drive, backward typically means:
           // - Left motor: negative steps
           // - Right motor: negative steps
@@ -236,19 +241,20 @@ void checkSerialCommand() {
           rightTargetSteps = -steps;
           setLeftDirection(leftTargetSteps);
           setRightDirection(rightTargetSteps);
-          
+
           Serial.print("Moving backward ");
           Serial.print(steps);
           Serial.println(" steps");
         }
         break;
-        
-      case 'R': case 'r':
+
+      case 'R':
+      case 'r':
         // Turn right (rotate clockwise)
         {
           int steps = Serial.parseInt();
           if (steps < 0) steps = -steps;  // Ensure positive
-          
+
           // For differential drive, right turn typically means:
           // - Left motor: positive steps
           // - Right motor: negative steps
@@ -256,19 +262,20 @@ void checkSerialCommand() {
           rightTargetSteps = -steps;
           setLeftDirection(leftTargetSteps);
           setRightDirection(rightTargetSteps);
-          
+
           Serial.print("Turning right ");
           Serial.print(steps);
           Serial.println(" steps");
         }
         break;
-        
-      case 'L': case 'l':
+
+      case 'L':
+      case 'l':
         // Turn left (rotate counterclockwise)
         {
           int steps = Serial.parseInt();
           if (steps < 0) steps = -steps;  // Ensure positive
-          
+
           // For differential drive, left turn typically means:
           // - Left motor: negative steps
           // - Right motor: positive steps
@@ -276,31 +283,30 @@ void checkSerialCommand() {
           rightTargetSteps = steps;
           setLeftDirection(leftTargetSteps);
           setRightDirection(rightTargetSteps);
-          
+
           Serial.print("Turning left ");
           Serial.print(steps);
           Serial.println(" steps");
         }
         break;
-        
-      case 'E': case 'e':
+
+      case 'E':
+      case 'e':
         // Enable/disable motors based on the next character
         if (Serial.available() > 0) {
           char motorSelect = Serial.read();
-          
+
           if (motorSelect == 'L' || motorSelect == 'l') {
             // Left motor control
             int state = Serial.parseInt();
             digitalWrite(LEFT_ENA_PIN, state == 0);  // Active LOW enable
             Serial.println(state == 0 ? "Left motor enabled" : "Left motor disabled");
-          }
-          else if (motorSelect == 'R' || motorSelect == 'r') {
+          } else if (motorSelect == 'R' || motorSelect == 'r') {
             // Right motor control
             int state = Serial.parseInt();
             digitalWrite(RIGHT_ENA_PIN, state == 0);  // Active LOW enable
             Serial.println(state == 0 ? "Right motor enabled" : "Right motor disabled");
-          }
-          else {
+          } else {
             // Both motors
             int state = Serial.parseInt();
             digitalWrite(LEFT_ENA_PIN, state == 0);   // Active LOW enable
@@ -309,8 +315,9 @@ void checkSerialCommand() {
           }
         }
         break;
-        
-      case 'T': case 't':
+
+      case 'T':
+      case 't':
         // Check for STOP command
         if (Serial.available() > 0) {
           char nextChar = Serial.read();
@@ -323,7 +330,7 @@ void checkSerialCommand() {
         }
         break;
     }
-    
+
     // Clear remaining characters
     while (Serial.available() > 0) {
       Serial.read();
@@ -343,7 +350,7 @@ void setLeftDirection(int steps) {
     digitalWrite(LEFT_DIR_PIN, HIGH);  // Forward direction
     leftDirection = HIGH;
   } else {
-    digitalWrite(LEFT_DIR_PIN, LOW);   // Backward direction
+    digitalWrite(LEFT_DIR_PIN, LOW);  // Backward direction
     leftDirection = LOW;
   }
 }
@@ -353,7 +360,7 @@ void setRightDirection(int steps) {
     digitalWrite(RIGHT_DIR_PIN, HIGH);  // Forward direction
     rightDirection = HIGH;
   } else {
-    digitalWrite(RIGHT_DIR_PIN, LOW);   // Backward direction
+    digitalWrite(RIGHT_DIR_PIN, LOW);  // Backward direction
     rightDirection = LOW;
   }
 }
