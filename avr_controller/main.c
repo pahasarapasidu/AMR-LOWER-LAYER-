@@ -19,8 +19,8 @@ int main(void) {
 	// spin both motors forward at 200 RPM for 2 s, then stop
 	motors_enable_left (true);
 	motors_enable_right(true);
-	motors_set_speed_left (200);
-	motors_set_speed_right(200);
+	motors_set_speed_left (2);
+	motors_set_speed_right(2);
 	_delay_ms(10000);
 
 	motors_stop_all();
