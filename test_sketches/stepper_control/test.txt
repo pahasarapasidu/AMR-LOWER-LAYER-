@@ -1,5 +1,0 @@
-"C:\Users\META\AppData\Local\Arduino15\packages\arduino\tools\avrdude\6.3.0-arduino17/bin/avrdude" "-CC:\Users\META\AppData\Local\Arduino15\packages\arduino\tools\avrdude\6.3.0-arduino17/etc/avrdude.conf" -v -V -patmega32u4 -cavr109 "-PCOM14" -b57600 -D "-Uflash:w:C:\Users\META\AppData\Local\arduino\sketches\DB7FB4166CC50DCA3EAC52B2180323D3/stepper_control.ino.hex:i"
-
-C:\Users\META\AppData\Local\Arduino15\packages\arduino\tools\avrdude\6.3.0-arduino17/bin/avrdude.exe
-
--C"C:\Users\META\AppData\Local\Arduino15\packages\arduino\tools\avrdude\6.3.0-arduino17/etc/avrdude.conf" -v -V -patmega32u4 -cavr109 "-PCOM14" -b57600 -D -Uflash:w: "$(ProjectDir)Debug\$(Targetname).hex":i
