@@ -46,7 +46,7 @@ C_SRCS +=  \
 ../src/motors.c \
 ../src/profiler.c \
 ../src/systick.c \
-../src/usb_cdc.c
+../src/m_usb.c
 
 
 PREPROCESSING_SRCS += 
@@ -63,7 +63,7 @@ src/imu.o \
 src/motors.o \
 src/profiler.o \
 src/systick.o \
-src/usb_cdc.o
+src/m_usb.o
 
 OBJS_AS_ARGS +=  \
 main.o \
@@ -73,7 +73,7 @@ src/imu.o \
 src/motors.o \
 src/profiler.o \
 src/systick.o \
-src/usb_cdc.o
+src/m_usb.o
 
 C_DEPS +=  \
 main.d \
@@ -83,7 +83,7 @@ src/imu.d \
 src/motors.d \
 src/profiler.d \
 src/systick.d \
-src/usb_cdc.d
+src/m_usb.d
 
 C_DEPS_AS_ARGS +=  \
 main.d \
@@ -93,7 +93,7 @@ src/imu.d \
 src/motors.d \
 src/profiler.d \
 src/systick.d \
-src/usb_cdc.d
+src/m_usb.d
 
 OUTPUT_FILE_PATH +=avr_controller.elf
 
@@ -158,7 +158,7 @@ src/systick.o: ../src/systick.c
 	@echo Finished building: $<
 	
 
-src/usb_cdc.o: ../src/usb_cdc.c
+src/m_usb.o: ../src/m_usb.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega32u4 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega32u4" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 

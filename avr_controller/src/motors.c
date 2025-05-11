@@ -33,15 +33,12 @@ void motors_init(void) {
     
     // — Timer4 (10-bit) for LEFT motor PUL on OC4D (PD7) —
     // Configure Timer4 for PWM mode with proper frequency
-    TCCR4A = 0;                // No PWM mode for channel A and B
-    
+    TCCR4A = 0;    // No PWM mode for channel A and B
     // COM4D1:0 = 01 for toggle OC4D on compare match
     TCCR4C = _BV(COM4D0);
-    
     // PWM4D = 0 (default) disables PWM mode for OC4D
     // WGM41:0 = 01 for PWM mode with OCR4C as TOP
     TCCR4D = _BV(WGM40);
-    
     // No clock yet, will be started when setting speed
     TCCR4B = 0;
     
@@ -84,15 +81,15 @@ void motors_set_speed_left(uint16_t rpm) {
     
     // Enable clock with appropriate prescaler based on required frequency
     // No prescaler for higher frequencies
-    TCCR4B = _BV(CS43);      // start timer4 with clk/1
+    TCCR4B = PRE_SCALE_TIMER4;      // start timer4 with clk/1
 }
 
 void motors_set_speed_right(uint16_t rpm) {
     uint32_t freq = (uint32_t)rpm * STEPS_PER_REV / 60U;
-    right_top = (uint16_t)(F_CPU/(2UL*freq) - 1UL);
+    right_top = (uint16_t)(F_CPU/(2UL*freq*CLOCK_DIVISOR) - 1UL);
     
     OCR1A = right_top;
-    TCCR1B |= _BV(CS10);       // start timer1 with clk/1
+    TCCR1B |= PRE_SCALE_TIMER1;       // start timer1 with clk/1
 }
 
 void motors_move_left(int32_t steps) {
