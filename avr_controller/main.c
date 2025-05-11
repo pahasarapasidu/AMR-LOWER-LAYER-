@@ -6,11 +6,20 @@
  */ 
 
 #include <avr/io.h>
+#include <stdio.h>
 
 
 #include "config.h"
 #include "motors.h"
 #include "m_usb.h"
+#include "bno055_ll.h"
+
+static void usb_send_ram(const char *s)
+{
+	while (*s) {
+		m_usb_tx_char(*s++);
+	}
+}
 
 int main(void) {
 	// — initialize everything —
@@ -29,24 +38,35 @@ int main(void) {
 	while (!m_usb_isconnected()) { }   /* wait until host opens port  */
 
 	m_usb_tx_string("M2 ready\r\n");   /* greeting so you know it’s alive */
+	
+	twi_init();            /* called inside bno055_init() too — harmless    */
 
-	/* ------------- main service loop ------------------- */
-	for (int i = 0;i<1000; i++)
-	{
-		/* m_usb_rx_char()  returns ?1 if buffer empty     */
-		int16_t c = m_usb_rx_char();
-		if (c >= 0)
-		{
-			/* 1. echo raw character back to terminal      */
-			m_usb_tx_char((uint8_t)c);
+	if (!bno055_init()) {
+		/* blink LED or hang here if IMU not found */
+		for (;;) { }
+	}
 
-			/* 2. print a TAB + decimal value + CR/LF      */
-			m_usb_tx_char('\t');
-			m_usb_tx_uint((uint8_t)c);
-			m_usb_tx_string("\r\n");
-		}
-		_delay_ms(1000);
-		/* -------- put your real-time tasks here -------- */
-		/* eg. sensor sampling, PID updates, watchdog      */
+	char line[64];
+
+	/* ----------  main telemetry loop  ---------- */
+	while (1) {
+		int16_t h16, r16, p16;
+		bno055_get_euler(&h16, &r16, &p16);   /* raw = deg·16              */
+
+		/* convert to float degrees for nicer printing */
+		float h = h16 / 16.0f;
+		float r = r16 / 16.0f;
+		float p = p16 / 16.0f;
+
+		uint8_t cal_ok = bno055_is_fully_calibrated() ? 1u : 0u;
+
+		/* craft one ASCII line */
+		snprintf(line, sizeof(line),
+		"H:%6.1f R:%6.1f P:%6.1f CAL:%u\r\n", h, r, p, cal_ok);
+
+		usb_send_ram(line);
+		m_usb_tx_push();                 /* flush buffer immediately      */
+
+		_delay_ms(20);                   /* 50 Hz output                  */
 	}
 }

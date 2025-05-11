@@ -8,7 +8,7 @@ src\adc.c
 
 src\encoders.c
 
-src\imu.c
+src\bno055_ll.c
 
 src\motors.c
 
