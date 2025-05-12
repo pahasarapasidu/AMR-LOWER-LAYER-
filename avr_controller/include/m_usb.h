@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include "config.h"
 
-
 // -----------------------------------------------------------------------------
 // Public functions:
 // -----------------------------------------------------------------------------
@@ -28,7 +27,6 @@ void m_usb_init(void);
 char m_usb_isconnected(void);
 // confirm that the USB port is connected to a PC
 
-
 // RECEIVE: -------------------------------------------------------------------
 
 unsigned char m_usb_rx_available(void);
@@ -39,8 +37,6 @@ char m_usb_rx_char(void);
 
 void m_usb_rx_flush(void);
 // discard all data in the receive buffer
-
-
 
 // TRANSMIT: ------------------------------------------------------------------
 
@@ -68,36 +64,33 @@ void m_usb_tx_ulong(unsigned long i);
 #define m_usb_tx_string(s) print_P(PSTR(s))
 // add a string to the transmit buffer
 
-
-
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
 
 // ---- OVERLOADS FOR M1 BACK COMPATIBILITY ----
-#define usb_init()			m_usb_init()
-#define usb_configured()	m_usb_isconnected()
+#define usb_init() m_usb_init()
+#define usb_configured() m_usb_isconnected()
 
-#define usb_rx_available()	m_usb_rx_available()
-#define usb_rx_flush()		m_usb_rx_flush()
-#define usb_rx_char()		m_usb_rx_char()
+#define usb_rx_available() m_usb_rx_available()
+#define usb_rx_flush() m_usb_rx_flush()
+#define usb_rx_char() m_usb_rx_char()
 
-#define usb_tx_char(val)	m_usb_tx_char(val)
-#define usb_tx_hex(val)		m_usb_tx_hex(val)
-#define usb_tx_decimal(val)	m_usb_tx_uint(val)
-#define usb_tx_string(val)	m_usb_tx_string(val)
-#define usb_tx_push()		m_usb_tx_push()
+#define usb_tx_char(val) m_usb_tx_char(val)
+#define usb_tx_hex(val) m_usb_tx_hex(val)
+#define usb_tx_decimal(val) m_usb_tx_uint(val)
+#define usb_tx_string(val) m_usb_tx_string(val)
+#define usb_tx_push() m_usb_tx_push()
 
-#define m_usb_rx_ascii()	m_usb_rx_char()
-#define m_usb_tx_ascii(val)	m_usb_tx_char(val)
-
+#define m_usb_rx_ascii() m_usb_rx_char()
+#define m_usb_tx_ascii(val) m_usb_tx_char(val)
 
 // EVERYTHING ELSE *****************************************************************
 
 // setup
 
-int8_t usb_serial_putchar(uint8_t c);	// transmit a character
-int8_t usb_serial_putchar_nowait(uint8_t c);  // transmit a character, do not wait
+int8_t usb_serial_putchar(uint8_t c);                          // transmit a character
+int8_t usb_serial_putchar_nowait(uint8_t c);                   // transmit a character, do not wait
 int8_t usb_serial_write(const uint8_t *buffer, uint16_t size); // transmit a buffer
 void print_P(const char *s);
 void phex(unsigned char c);
@@ -105,23 +98,18 @@ void phex16(unsigned int i);
 void m_usb_tx_hex8(unsigned char i);
 void m_usb_tx_push(void);
 
-
 // serial parameters
-uint32_t usb_serial_get_baud(void);	// get the baud rate
-uint8_t usb_serial_get_stopbits(void);	// get the number of stop bits
-uint8_t usb_serial_get_paritytype(void);// get the parity type
-uint8_t usb_serial_get_numbits(void);	// get the number of data bits
-uint8_t usb_serial_get_control(void);	// get the RTS and DTR signal state
+uint32_t usb_serial_get_baud(void);             // get the baud rate
+uint8_t usb_serial_get_stopbits(void);          // get the number of stop bits
+uint8_t usb_serial_get_paritytype(void);        // get the parity type
+uint8_t usb_serial_get_numbits(void);           // get the number of data bits
+uint8_t usb_serial_get_control(void);           // get the RTS and DTR signal state
 int8_t usb_serial_set_control(uint8_t signals); // set DSR, DCD, RI, etc
-
-
 
 // This file does not include the HID debug functions, so these empty
 // macros replace them with nothing, so users can compile code that
 // has calls to these functions.
 #define usb_debug_putchar(c)
 #define usb_debug_flush_output()
-
-
 
 #endif

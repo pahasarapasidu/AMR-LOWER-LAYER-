@@ -24,20 +24,19 @@ static void usb_send_ram(const char *s)
 int main(void) {
 	// — initialize everything —
 	motors_init();
-
 	// — quick test sequence —
 	motors_enable_left (true);
 	motors_enable_right(true);
-	motors_set_speed_left (2);
-	motors_set_speed_right(2);
-	_delay_ms(1000);
+	motors_set_speed_left (12);
+	motors_set_speed_right(12);
+	_delay_ms(10000);
 
 	motors_stop_all();
 	
 	m_usb_init();                      /* start PLL, attach to bus    */
 	while (!m_usb_isconnected()) { }   /* wait until host opens port  */
 
-	m_usb_tx_string("M2 ready\r\n");   /* greeting so you know it’s alive */
+	m_usb_tx_string("M2 ready\r\n");  
 	
 	twi_init();            /* called inside bno055_init() too — harmless    */
 

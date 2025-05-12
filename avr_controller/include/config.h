@@ -3,8 +3,7 @@
  *
  * Created: 5/6/2025 4:35:44 AM
  *  Author: Endeavor360
- */ 
-
+ */
 
 #ifndef CONFIG_H_
 #define CONFIG_H_
@@ -22,80 +21,77 @@
 #define STEPS_PER_REV 200U
 
 // Left motor pins (Arduino Leonardo)
-//  PUL- -> D6  = PD7 / OC1A
+//  PUL- -> D6  = PB7 / OC0A
 //  DIR- -> D12  = PD6
 //  ENA- -> D5  = PC6  (active High in inverted logic ; HIGH at mcu = signal low at the other side of the optocoupler)
-#define LEFT_PUL_DDR   DDRD
-#define LEFT_PUL_PORT  PORTD
-#define LEFT_PUL_BIT   PD7
+#define LEFT_PUL_DDR DDRB
+#define LEFT_PUL_PORT PORTB
+#define LEFT_PUL_BIT PB7
 
-#define LEFT_DIR_DDR   DDRD
-#define LEFT_DIR_PORT  PORTD
-#define LEFT_DIR_BIT   PD6
+#define LEFT_DIR_DDR DDRD
+#define LEFT_DIR_PORT PORTD
+#define LEFT_DIR_BIT PD6
 
-#define LEFT_ENA_DDR   DDRC
-#define LEFT_ENA_PORT  PORTC
-#define LEFT_ENA_BIT   PC6
+#define LEFT_ENA_DDR DDRC
+#define LEFT_ENA_PORT PORTC
+#define LEFT_ENA_BIT PC6
 
 // Right motor pins (Arduino Leonardo)
-//  PUL- -> D9  = PB5 / OC4D
+//  PUL- -> D9  = PB5 / OC1A
 //  DIR- -> D8  = PB4
-//  ENA- -> Not terminated at header (Change this when PCB arrives) = PB0  (active High; explained above) 
-#define RIGHT_PUL_DDR   DDRB
-#define RIGHT_PUL_PORT  PORTB
-#define RIGHT_PUL_BIT   PB5
+//  ENA- -> Not terminated at header (Change this when PCB arrives) = PB0  (active High; explained above)
+#define RIGHT_PUL_DDR DDRB
+#define RIGHT_PUL_PORT PORTB
+#define RIGHT_PUL_BIT PB5
 
-#define RIGHT_DIR_DDR   DDRB
-#define RIGHT_DIR_PORT  PORTB
-#define RIGHT_DIR_BIT   PB4
+#define RIGHT_DIR_DDR DDRB
+#define RIGHT_DIR_PORT PORTB
+#define RIGHT_DIR_BIT PB4
 
-#define RIGHT_ENA_DDR   DDRF
-#define RIGHT_ENA_PORT  PORTF
-#define RIGHT_ENA_BIT   PF7   //for the moment use pin A0 of the Leonardo
+#define RIGHT_ENA_DDR DDRF
+#define RIGHT_ENA_PORT PORTF
+#define RIGHT_ENA_BIT PF7 // for the moment use pin A0 of the Leonardo
 
-#ifndef _BV //this is just to silence the shitty linter in microchip studio
+#ifndef _BV // this is just to silence the shitty linter in microchip studio
 #define _BV(bit) (1 << (bit))
 #endif
 
 #define CLOCK_DIVISOR 1024U
-#define PRE_SCALE_TIMER4 (_BV(CS43) | _BV(CS41) | _BV(CS40))
-#define PRE_SCALE_TIMER1 (_BV(CS12) | _BV(CS10) )
-
+/* ---------- prescaler masks for 1024 ---------- */
+#define PRE_SCALE_TIMER0 (_BV(CS02) | _BV(CS00)) /* Timer-0 */
+#define PRE_SCALE_TIMER1 (_BV(CS12) | _BV(CS10)) /* Timer-1 */
 
 // constants corresponding to the various serial parameters
-#define USB_SERIAL_DTR			0x01
-#define USB_SERIAL_RTS			0x02
-#define USB_SERIAL_1_STOP		0
-#define USB_SERIAL_1_5_STOP		1
-#define USB_SERIAL_2_STOP		2
-#define USB_SERIAL_PARITY_NONE		0
-#define USB_SERIAL_PARITY_ODD		1
-#define USB_SERIAL_PARITY_EVEN		2
-#define USB_SERIAL_PARITY_MARK		3
-#define USB_SERIAL_PARITY_SPACE		4
-#define USB_SERIAL_DCD			0x01
-#define USB_SERIAL_DSR			0x02
-#define USB_SERIAL_BREAK		0x04
-#define USB_SERIAL_RI			0x08
-#define USB_SERIAL_FRAME_ERR		0x10
-#define USB_SERIAL_PARITY_ERR		0x20
-#define USB_SERIAL_OVERRUN_ERR		0x40
+#define USB_SERIAL_DTR 0x01
+#define USB_SERIAL_RTS 0x02
+#define USB_SERIAL_1_STOP 0
+#define USB_SERIAL_1_5_STOP 1
+#define USB_SERIAL_2_STOP 2
+#define USB_SERIAL_PARITY_NONE 0
+#define USB_SERIAL_PARITY_ODD 1
+#define USB_SERIAL_PARITY_EVEN 2
+#define USB_SERIAL_PARITY_MARK 3
+#define USB_SERIAL_PARITY_SPACE 4
+#define USB_SERIAL_DCD 0x01
+#define USB_SERIAL_DSR 0x02
+#define USB_SERIAL_BREAK 0x04
+#define USB_SERIAL_RI 0x08
+#define USB_SERIAL_FRAME_ERR 0x10
+#define USB_SERIAL_PARITY_ERR 0x20
+#define USB_SERIAL_OVERRUN_ERR 0x40
 
-#define EP_TYPE_CONTROL			0x00
-#define EP_TYPE_BULK_IN			0x81
-#define EP_TYPE_BULK_OUT		0x80
-#define EP_TYPE_INTERRUPT_IN		0xC1
-#define EP_TYPE_INTERRUPT_OUT		0xC0
-#define EP_TYPE_ISOCHRONOUS_IN		0x41
-#define EP_TYPE_ISOCHRONOUS_OUT		0x40
-#define EP_SINGLE_BUFFER		0x02
-#define EP_DOUBLE_BUFFER		0x06
-#define EP_SIZE(s)	((s) == 64 ? 0x30 :	\
-((s) == 32 ? 0x20 :	\
-((s) == 16 ? 0x10 :	\
-0x00)))
+#define EP_TYPE_CONTROL 0x00
+#define EP_TYPE_BULK_IN 0x81
+#define EP_TYPE_BULK_OUT 0x80
+#define EP_TYPE_INTERRUPT_IN 0xC1
+#define EP_TYPE_INTERRUPT_OUT 0xC0
+#define EP_TYPE_ISOCHRONOUS_IN 0x41
+#define EP_TYPE_ISOCHRONOUS_OUT 0x40
+#define EP_SINGLE_BUFFER 0x02
+#define EP_DOUBLE_BUFFER 0x06
+#define EP_SIZE(s) ((s) == 64 ? 0x30 : ((s) == 32 ? 0x20 : ((s) == 16 ? 0x10 : 0x00)))
 
-#define MAX_ENDPOINT		4
+#define MAX_ENDPOINT 4
 
 #define LSB(n) (n & 255)
 #define MSB(n) ((n >> 8) & 255)
@@ -108,28 +104,28 @@
 #define PLL_CONFIG() (PLLCSR = 0x12) // 0001 0010 For a 16MHz clock
 #endif
 
-#define USB_CONFIG() (USBCON = ((1<<USBE)|(1<<OTGPADE)))
-#define USB_FREEZE() (USBCON = ((1<<USBE)|(1<<FRZCLK)))
+#define USB_CONFIG() (USBCON = ((1 << USBE) | (1 << OTGPADE)))
+#define USB_FREEZE() (USBCON = ((1 << USBE) | (1 << FRZCLK)))
 
 // standard control endpoint request types
-#define GET_STATUS			0
-#define CLEAR_FEATURE			1
-#define SET_FEATURE			3
-#define SET_ADDRESS			5
-#define GET_DESCRIPTOR			6
-#define GET_CONFIGURATION		8
-#define SET_CONFIGURATION		9
-#define GET_INTERFACE			10
-#define SET_INTERFACE			11
+#define GET_STATUS 0
+#define CLEAR_FEATURE 1
+#define SET_FEATURE 3
+#define SET_ADDRESS 5
+#define GET_DESCRIPTOR 6
+#define GET_CONFIGURATION 8
+#define SET_CONFIGURATION 9
+#define GET_INTERFACE 10
+#define SET_INTERFACE 11
 // HID (human interface device)
-#define HID_GET_REPORT			1
-#define HID_GET_PROTOCOL		3
-#define HID_SET_REPORT			9
-#define HID_SET_IDLE			10
-#define HID_SET_PROTOCOL		11
+#define HID_GET_REPORT 1
+#define HID_GET_PROTOCOL 3
+#define HID_SET_REPORT 9
+#define HID_SET_IDLE 10
+#define HID_SET_PROTOCOL 11
 // CDC (communication class device)
-#define CDC_SET_LINE_CODING		0x20
-#define CDC_GET_LINE_CODING		0x21
-#define CDC_SET_CONTROL_LINE_STATE	0x22
+#define CDC_SET_LINE_CODING 0x20
+#define CDC_GET_LINE_CODING 0x21
+#define CDC_SET_CONTROL_LINE_STATE 0x22
 
 #endif // CONFIG_H
