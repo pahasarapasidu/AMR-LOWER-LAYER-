@@ -23,18 +23,19 @@ static void usb_send_ram(const char *s)
 
 int main(void) {
 	// — initialize everything —
+	m_usb_init();                      /* start PLL, attach to bus    */
+	while (!m_usb_isconnected()) { }   /* wait until host opens port  */
+		
 	motors_init();
 	// — quick test sequence —
 	motors_enable_left (true);
 	motors_enable_right(true);
-	motors_set_speed_left (12);
-	motors_set_speed_right(12);
+	motors_set_speed_left (1000);
+	motors_set_speed_right(1000);
 	_delay_ms(10000);
 
 	motors_stop_all();
 	
-	m_usb_init();                      /* start PLL, attach to bus    */
-	while (!m_usb_isconnected()) { }   /* wait until host opens port  */
 
 	m_usb_tx_string("M2 ready\r\n");  
 	
@@ -61,11 +62,11 @@ int main(void) {
 
 		/* craft one ASCII line */
 		snprintf(line, sizeof(line),
-		"H:%6.1f R:%6.1f P:%6.1f CAL:%u\r\n", h, r, p, cal_ok);
+		"H:%6.2f R:%6.2f P:%6.2f CAL:%u\r\n", h, r, p, cal_ok);
 
 		usb_send_ram(line);
 		m_usb_tx_push();                 /* flush buffer immediately      */
 
-		_delay_ms(20);                   /* 50 Hz output                  */
+		_delay_ms(2);                   /* 50 Hz output                  */
 	}
 }

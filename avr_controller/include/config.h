@@ -21,45 +21,44 @@
 #define STEPS_PER_REV 200U
 
 // Left motor pins (Arduino Leonardo)
-//  PUL- -> D6  = PB7 / OC0A
+//  PUL- -> D6  = PD7 / OC1A
 //  DIR- -> D12  = PD6
 //  ENA- -> D5  = PC6  (active High in inverted logic ; HIGH at mcu = signal low at the other side of the optocoupler)
-#define LEFT_PUL_DDR DDRB
-#define LEFT_PUL_PORT PORTB
-#define LEFT_PUL_BIT PB7
+#define LEFT_PUL_DDR   DDRD
+#define LEFT_PUL_PORT  PORTD
+#define LEFT_PUL_BIT   PD7
 
-#define LEFT_DIR_DDR DDRD
-#define LEFT_DIR_PORT PORTD
-#define LEFT_DIR_BIT PD6
+#define LEFT_DIR_DDR   DDRD
+#define LEFT_DIR_PORT  PORTD
+#define LEFT_DIR_BIT   PD6
 
-#define LEFT_ENA_DDR DDRC
-#define LEFT_ENA_PORT PORTC
-#define LEFT_ENA_BIT PC6
+#define LEFT_ENA_DDR   DDRC
+#define LEFT_ENA_PORT  PORTC
+#define LEFT_ENA_BIT   PC6
 
 // Right motor pins (Arduino Leonardo)
-//  PUL- -> D9  = PB5 / OC1A
+//  PUL- -> D9  = PB5 / OC4D
 //  DIR- -> D8  = PB4
 //  ENA- -> Not terminated at header (Change this when PCB arrives) = PB0  (active High; explained above)
-#define RIGHT_PUL_DDR DDRB
-#define RIGHT_PUL_PORT PORTB
-#define RIGHT_PUL_BIT PB5
+#define RIGHT_PUL_DDR   DDRB
+#define RIGHT_PUL_PORT  PORTB
+#define RIGHT_PUL_BIT   PB5
 
-#define RIGHT_DIR_DDR DDRB
-#define RIGHT_DIR_PORT PORTB
-#define RIGHT_DIR_BIT PB4
+#define RIGHT_DIR_DDR   DDRB
+#define RIGHT_DIR_PORT  PORTB
+#define RIGHT_DIR_BIT   PB4
 
-#define RIGHT_ENA_DDR DDRF
-#define RIGHT_ENA_PORT PORTF
-#define RIGHT_ENA_BIT PF7 // for the moment use pin A0 of the Leonardo
+#define RIGHT_ENA_DDR   DDRF
+#define RIGHT_ENA_PORT  PORTF
+#define RIGHT_ENA_BIT   PF7   //for the moment use pin A0 of the Leonardo
 
-#ifndef _BV // this is just to silence the shitty linter in microchip studio
+#ifndef _BV //this is just to silence the shitty linter in microchip studio
 #define _BV(bit) (1 << (bit))
 #endif
 
 #define CLOCK_DIVISOR 1024U
-/* ---------- prescaler masks for 1024 ---------- */
-#define PRE_SCALE_TIMER0 (_BV(CS02) | _BV(CS00)) /* Timer-0 */
-#define PRE_SCALE_TIMER1 (_BV(CS12) | _BV(CS10)) /* Timer-1 */
+#define PRE_SCALE_TIMER4 (_BV(CS43) | _BV(CS41) | _BV(CS40))
+#define PRE_SCALE_TIMER1 (_BV(CS12) | _BV(CS10) )
 
 // constants corresponding to the various serial parameters
 #define USB_SERIAL_DTR 0x01

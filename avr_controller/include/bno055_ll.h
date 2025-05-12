@@ -42,6 +42,7 @@ bool bno055_read8(uint8_t reg, uint8_t *val);
 bool bno055_read(uint8_t reg, uint8_t *buf, uint8_t len);
 
 void bno055_get_euler(int16_t *h, int16_t *r, int16_t *p); /* deg/16 */
+void bno055_get_omega(int16_t *gx, int16_t *gy, int16_t *gz);
 bool bno055_is_fully_calibrated(void);
 
 #endif /* BNO055_LL_H_ */

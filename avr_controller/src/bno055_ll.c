@@ -157,6 +157,17 @@ void bno055_get_euler(int16_t *h, int16_t *r, int16_t *p)
     }
 }
 
+void bno055_get_omega(int16_t *gx, int16_t *gy, int16_t *gz)
+{
+	uint8_t buf[6];
+	if (bno055_read(0x14, buf, 6))            /* GYRO_DATA_X_LSB */
+	{
+		*gx = (int16_t)(buf[0] | ((uint16_t)buf[1] << 8));
+		*gy = (int16_t)(buf[2] | ((uint16_t)buf[3] << 8));
+		*gz = (int16_t)(buf[4] | ((uint16_t)buf[5] << 8));
+	}
+}
+
 bool bno055_is_fully_calibrated(void)
 {
     uint8_t cal;
