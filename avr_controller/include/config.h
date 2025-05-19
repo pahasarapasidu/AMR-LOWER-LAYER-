@@ -52,9 +52,9 @@
 #define RIGHT_DIR_PORT  PORTB
 #define RIGHT_DIR_BIT   PB4
 
-#define RIGHT_ENA_DDR   DDRF
-#define RIGHT_ENA_PORT  PORTF
-#define RIGHT_ENA_BIT   PF7   //for the moment use pin A0 of the Leonardo
+#define RIGHT_ENA_DDR   DDRB
+#define RIGHT_ENA_PORT  PORTB
+#define RIGHT_ENA_BIT   PB0  //for the moment use pin A0 of the Leonardo
 
 #ifndef _BV //this is just to silence the shitty linter in microchip studio
 #define _BV(bit) (1 << (bit))

@@ -1694,9 +1694,9 @@ bool bno055_is_fully_calibrated(void)
      b5c:	84 b1       	in	r24, 0x04	; 4
      b5e:	80 61       	ori	r24, 0x10	; 16
      b60:	84 b9       	out	0x04, r24	; 4
-     b62:	80 b3       	in	r24, 0x10	; 16
-     b64:	80 68       	ori	r24, 0x80	; 128
-     b66:	80 bb       	out	0x10, r24	; 16
+     b62:	84 b1       	in	r24, 0x04	; 4
+     b64:	81 60       	ori	r24, 0x01	; 1
+     b66:	84 b9       	out	0x04, r24	; 4
      b68:	8b b1       	in	r24, 0x0b	; 11
      b6a:	80 68       	ori	r24, 0x80	; 128
      b6c:	8b b9       	out	0x0b, r24	; 11
@@ -1712,9 +1712,9 @@ bool bno055_is_fully_calibrated(void)
      b80:	85 b1       	in	r24, 0x05	; 5
      b82:	80 61       	ori	r24, 0x10	; 16
      b84:	85 b9       	out	0x05, r24	; 5
-     b86:	81 b3       	in	r24, 0x11	; 17
-     b88:	8f 77       	andi	r24, 0x7F	; 127
-     b8a:	81 bb       	out	0x11, r24	; 17
+     b86:	85 b1       	in	r24, 0x05	; 5
+     b88:	8e 7f       	andi	r24, 0xFE	; 254
+     b8a:	85 b9       	out	0x05, r24	; 5
      b8c:	10 92 c0 00 	sts	0x00C0, r1	; 0x8000c0 <__TEXT_REGION_LENGTH__+0x7f80c0>
      b90:	84 e0       	ldi	r24, 0x04	; 4
      b92:	80 93 c2 00 	sts	0x00C2, r24	; 0x8000c2 <__TEXT_REGION_LENGTH__+0x7f80c2>
@@ -1742,13 +1742,13 @@ bool bno055_is_fully_calibrated(void)
 00000bc2 <motors_enable_right>:
      bc2:	88 23       	and	r24, r24
      bc4:	21 f0       	breq	.+8      	; 0xbce <motors_enable_right+0xc>
-     bc6:	81 b3       	in	r24, 0x11	; 17
-     bc8:	80 68       	ori	r24, 0x80	; 128
-     bca:	81 bb       	out	0x11, r24	; 17
+     bc6:	85 b1       	in	r24, 0x05	; 5
+     bc8:	81 60       	ori	r24, 0x01	; 1
+     bca:	85 b9       	out	0x05, r24	; 5
      bcc:	08 95       	ret
-     bce:	81 b3       	in	r24, 0x11	; 17
-     bd0:	8f 77       	andi	r24, 0x7F	; 127
-     bd2:	81 bb       	out	0x11, r24	; 17
+     bce:	85 b1       	in	r24, 0x05	; 5
+     bd0:	8e 7f       	andi	r24, 0xFE	; 254
+     bd2:	85 b9       	out	0x05, r24	; 5
      bd4:	08 95       	ret
 
 00000bd6 <motors_enable_all>:
