@@ -28,7 +28,7 @@
 
 // Pin definitions
 // Left motor pins
-const int LEFT_PULSE_PIN = 11;   // Connect to PUL- of left motor
+const int LEFT_PULSE_PIN = 6;   // Connect to PUL- of left motor
 const int LEFT_DIR_PIN = 12;    // Connect to DIR- of left motor
 const int LEFT_ENA_PIN = 5;     // Connect to ENA- of left motor
 
@@ -199,7 +199,7 @@ void checkSerialCommand() {
             int steps = Serial.parseInt();
             leftTargetSteps = steps;
             rightTargetSteps = steps;
-            setLeftDirection(leftTargetSteps);
+            setLeftDirection(-leftTargetSteps);
             setRightDirection(rightTargetSteps);
             Serial.print("Moving both motors ");
             Serial.print(abs(steps));

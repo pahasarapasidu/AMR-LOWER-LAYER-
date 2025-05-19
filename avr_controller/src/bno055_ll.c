@@ -6,7 +6,10 @@
 
 #include "bno055_ll.h"
 
-/* ??????????????????????????????  LOCAL MACROS ????????????????????????????? */
+static const uint8_t offset_reg_first = 0x55;  /* ACCEL_OFFSET_X_LSB */
+static const uint8_t offset_reg_last  = 0x6A;  /* MAG_RADIUS_MSB     */
+
+/*   LOCAL MACROS  */
 #define TW_START (1u << TWSTA)
 #define TW_STOP (1u << TWSTO)
 #define TW_INT_FLAG (1u << TWINT)
@@ -16,7 +19,7 @@
 /* TW_STATUS = TWSR & 0xF8  (�25.7.4) */
 #define TW_STATUS (TWSR & 0xF8u)
 
-/* ???????????????????????????  INTERNAL UTILITIES ?????????????????????????? */
+/*   INTERNAL UTILITIES  */
 static inline void twi_wait(void)
 {
     while (!(TWCR & TW_INT_FLAG))
@@ -45,7 +48,7 @@ static void twi_stop(void)
     TWCR = TW_INT_FLAG | TW_STOP | TW_ENABLE;
 }
 
-/* ???????????????????????????  PUBLIC TWI ROUTINES ????????????????????????? */
+/*   PUBLIC TWI ROUTINES  */
 void twi_init(void)
 {
     /* prescaler bits (TWPS1:0) = 0 ? prescaler = 1 */
@@ -98,7 +101,7 @@ bool twi_read(uint8_t sla, uint8_t *buf, uint8_t len)
     return true;
 }
 
-/* ???????????????????????????  BNO055 BASIC ACCESS ????????????????????????? */
+/*   BNO055 BASIC ACCESS  */
 bool bno055_write8(uint8_t reg, uint8_t val)
 {
     uint8_t pkt[2] = {reg, val};
@@ -119,7 +122,7 @@ bool bno055_read(uint8_t reg, uint8_t *buf, uint8_t len)
     return twi_read(BNO055_I2C_ADDR, buf, len);
 }
 
-/* ???????????????????????????  HIGH-LEVEL HELPERS ?????????????????????????? */
+/*  HIGH-LEVEL HELPERS  */
 static bool bno055_set_mode(uint8_t mode)
 {
     return bno055_write8(0x3D, mode); /* BNO055_OPR_MODE_ADDR */
@@ -157,6 +160,7 @@ void bno055_get_euler(int16_t *h, int16_t *r, int16_t *p)
     }
 }
 
+//decide not needed later
 void bno055_get_omega(int16_t *gx, int16_t *gy, int16_t *gz)
 {
 	uint8_t buf[6];
@@ -174,4 +178,45 @@ bool bno055_is_fully_calibrated(void)
     if (!bno055_read8(0x35, &cal))
         return false;                /* CALIB_STAT */
     return ((cal >> 6) & 0x03) == 3; /* SYS == 3   */
+}
+
+bool bno055_apply_offsets(const uint8_t calib[22])
+{
+	/* 1) remember current operating mode */
+	uint8_t mode;
+	if (!bno055_read8(0x3D, &mode)) return false;      /* OPR_MODE */
+
+	/* 2) switch to CONFIG mode */
+	if (!bno055_write8(0x3D, 0x00)) return false;
+	_delay_ms(25);
+
+	/* 3) write the entire 22-byte block */
+	for (uint8_t i = 0; i < 22; ++i) {
+		if (!bno055_write8(offset_reg_first + i, calib[i]))
+		return false;
+	}
+
+	/* 4) restore previous mode */
+	if (!bno055_write8(0x3D, mode)) return false;
+	_delay_ms(20);
+
+	return true;
+}
+
+bool bno055_read_offsets(uint8_t calib[22])
+{
+	uint8_t mode;
+	if (!bno055_read8(0x3D, &mode)) return false;
+
+	if (!bno055_write8(0x3D, 0x00)) return false;   /* CONFIG */
+	_delay_ms(25);
+
+	for (uint8_t i = 0; i < 22; ++i) {
+		if (!bno055_read8(offset_reg_first + i, &calib[i]))
+		return false;
+	}
+
+	bno055_write8(0x3D, mode);                     /* back to old mode */
+	_delay_ms(20);
+	return true;
 }

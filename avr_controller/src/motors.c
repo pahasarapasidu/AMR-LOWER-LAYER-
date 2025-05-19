@@ -11,8 +11,8 @@
 #include "config.h"
 
 /* private state ----------------------------------------------------------- */
-static uint8_t left_top;   /* Timer-0 is 8-bit  */
-static uint16_t right_top; /* Timer-1 is 16-bit */
+static uint8_t left_top;
+static uint16_t right_top;
 
 /* helpers ----------------------------------------------------------------- */
 static inline uint32_t rpm_to_freq(uint16_t rpm)
@@ -90,19 +90,34 @@ void motors_set_dir_right(bool fwd)
 
 void motors_set_speed_left(uint16_t rpm)
 {
-	    uint32_t freq = rpm_to_freq(rpm);
-	    left_top = (uint16_t)(F_CPU/(2UL*freq*CLOCK_DIVISOR) - 1UL);
-	    
-	    // Timer 4 has a different architecture - need careful setup for consistent timing
-	    // For accurate frequency with Timer4:
-	    if (left_top > 255) left_top = 255;  // Timer4 is 8-bit in this mode
-	    
-	    OCR4C = left_top;         // Set TOP value
-	    OCR4D = left_top / 2;     // Set compare value for 50% duty cycle
-	    
-	    // Enable clock with appropriate prescaler based on required frequency
-	    // No prescaler for higher frequencies
-	    TCCR4B = PRE_SCALE_TIMER4;      // start timer4 with clk/1
+	uint32_t freq = rpm_to_freq(rpm);
+	TCCR4B &= ~(_BV(CS43) | _BV(CS42) |_BV(CS41) | _BV(CS40));
+	if (rpm > 500)
+	{
+		// for higher rpm, set shorter lower prescaler with higher pulse frequency to go faster
+		left_top = (uint16_t)(F_CPU / (2UL * freq * CLOCK_DIVISOR_TIMER4_HIGH) - 1UL);
+
+		if (left_top > 255)
+			left_top = 255; // Timer4 is 8-bit in this mode
+
+		OCR4C = left_top;	  // Set TOP value
+		OCR4D = left_top / 2; // Set compare value for 50% duty cycle
+
+		TCCR4B |= PRE_SCALE_TIMER4_HIGH;
+	}
+	else
+	{
+		// for lower rpm, set shorter higher prescaler wit lower pulse frequency to go slower
+		left_top = (uint16_t)(F_CPU / (2UL * freq * CLOCK_DIVISOR_TIMER4_LOW) - 1UL);
+
+		if (left_top > 255)
+			left_top = 255; // Timer4 is 8-bit in this mode
+
+		OCR4C = left_top;	  // Set TOP value
+		OCR4D = left_top / 2; // Set compare value for 50% duty cycle
+
+		TCCR4B |= PRE_SCALE_TIMER4_LOW;
+	}
 }
 
 void motors_set_speed_right(uint16_t rpm)
@@ -170,6 +185,6 @@ void motors_stop_all(void)
 	motors_enable_all(false);
 
 	/* stop timers � clear prescaler bits */
-    TCCR1B &= ~(_BV(CS12)|_BV(CS11)|_BV(CS10));
-    TCCR4B &= ~(_BV(CS43)|_BV(CS42)|_BV(CS41)|_BV(CS40));
+	TCCR1B &= ~(_BV(CS12) | _BV(CS11) | _BV(CS10));
+	TCCR4B &= ~(_BV(CS43) | _BV(CS42) | _BV(CS41) | _BV(CS40));
 }

@@ -9,13 +9,17 @@
 #define CONFIG_H_
 
 // MCU clock
-#define F_CPU 16000000UL
+#define F_CPU 8000000UL
 
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+
+
+//----------------------------------------------MOTORS--------------------------------------------------
 
 // Steps per revolution (full-step mode)
 #define STEPS_PER_REV 200U
@@ -57,9 +61,16 @@
 #endif
 
 #define CLOCK_DIVISOR 1024U
-#define PRE_SCALE_TIMER4 (_BV(CS43) | _BV(CS41) | _BV(CS40))
 #define PRE_SCALE_TIMER1 (_BV(CS12) | _BV(CS10) )
 
+#define CLOCK_DIVISOR_TIMER4_LOW 2048U
+#define PRE_SCALE_TIMER4_LOW (_BV(CS43)  | _BV(CS42) )
+#define CLOCK_DIVISOR_TIMER4_HIGH 256U
+#define PRE_SCALE_TIMER4_HIGH (_BV(CS43) | _BV(CS40))
+
+
+
+//----------------------------------------------USB-CDC--------------------------------------------------
 // constants corresponding to the various serial parameters
 #define USB_SERIAL_DTR 0x01
 #define USB_SERIAL_RTS 0x02
@@ -126,5 +137,39 @@
 #define CDC_SET_LINE_CODING 0x20
 #define CDC_GET_LINE_CODING 0x21
 #define CDC_SET_CONTROL_LINE_STATE 0x22
+
+
+
+//----------------------------------------------IMU--------------------------------------------------
+/* BNO055 I2C addresses (BOOT pin low = ADDR = 0x28, high = 0x29) */
+#define BNO055_ADDR_A 0x28u
+#define BNO055_ADDR_B 0x29u
+#define BNO055_I2C_ADDR BNO055_ADDR_A /**< change if needed        */
+
+/* Desired I?C speed (Hz) */
+#define TWI_SCL_HZ 400000UL /**< 400 kbit ?Fast? mode   */
+
+
+
+//---------------------------------------------ANALOG-------------------------------------------------
+/* 0-7  = PF0…PF7,   8-13 = PB4…PB7                       */
+#define ADC_CH_BAT_MAIN     0   // PF0  – main battery divider
+#define ADC_CH_BAT_AUX      1   // PF1  – aux battery divider
+#define ADC_CH_CLIFF_LEFT   4   // PF4  – Sharp IR left
+#define ADC_CH_CLIFF_FRONT  5   // PF5  – Sharp IR centre
+#define ADC_CH_CLIFF_RIGHT  6   // PF6  – Sharp IR right
+
+/* ---------- Conversion parameters --------------------- */
+#define ADC_NUM_SAMPLES     4   // simple software average
+#define ADC_PRESCALER_BITS  ((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)) /* ÷128 */
+
+/* ---------- Battery-scaling maths --------------------- *
+ *   VBAT =  ADCraw * (AVcc / 1023) * (R1+R2) / R2
+ *   Put the resistor ratios here so the driver can give
+ *   you millivolts directly.  Example 100 k? / 33 k?.     */
+#define BAT_DIV_FACTOR_NUM  (1)   // (R1+R2)*100 / R2
+#define BAT_DIV_FACTOR_DEN  (1)
+
+
 
 #endif // CONFIG_H

@@ -36,7 +36,7 @@
 
 // Pin definitions
 // Left motor pins
-const int LEFT_PULSE_PIN = 11;  // Connect to PUL- of left motor (PB7/OC0A)
+const int LEFT_PULSE_PIN = 6;  // Connect to PUL- of left motor (PB7/OC0A)
 const int LEFT_DIR_PIN = 12;    // Connect to DIR- of left motor (PD6)
 const int LEFT_ENA_PIN = 5;     // Connect to ENA- of left motor (PC6)
 
@@ -46,8 +46,8 @@ const int RIGHT_DIR_PIN = 8;    // Connect to DIR- of right motor (PB4)
 const int RIGHT_ENA_PIN = 10;   // Connect to ENA- of right motor (PB0) - Not terminated at header currently
 
 // Encoder pins
-const int LEFT_ENCODER_PIN_A = 7;  // Left motor encoder channel A
-const int LEFT_ENCODER_PIN_B = 6;  // Left motor encoder channel B
+const int LEFT_ENCODER_PIN_A = 0;  // Left motor encoder channel A
+const int LEFT_ENCODER_PIN_B = 1;  // Left motor encoder channel B
 
 // Motion parameters
 const int PULSE_PER_REV = 200;  // For full step mode (1.8° motor)

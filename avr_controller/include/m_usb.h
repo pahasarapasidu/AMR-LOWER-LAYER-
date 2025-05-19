@@ -9,11 +9,12 @@
 #ifndef m_usb__
 #define m_usb__
 
+#include "config.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <stdlib.h>
-#include "config.h"
+
 
 // -----------------------------------------------------------------------------
 // Public functions:
