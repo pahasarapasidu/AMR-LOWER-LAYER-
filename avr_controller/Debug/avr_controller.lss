@@ -1685,36 +1685,36 @@ bool bno055_is_fully_calibrated(void)
      b4a:	8a b1       	in	r24, 0x0a	; 10
      b4c:	80 64       	ori	r24, 0x40	; 64
      b4e:	8a b9       	out	0x0a, r24	; 10
-     b50:	87 b1       	in	r24, 0x07	; 7
-     b52:	80 64       	ori	r24, 0x40	; 64
-     b54:	87 b9       	out	0x07, r24	; 7
+     b50:	84 b1       	in	r24, 0x04	; 4
+     b52:	81 60       	ori	r24, 0x01	; 1
+     b54:	84 b9       	out	0x04, r24	; 4
      b56:	84 b1       	in	r24, 0x04	; 4
      b58:	80 62       	ori	r24, 0x20	; 32
      b5a:	84 b9       	out	0x04, r24	; 4
      b5c:	84 b1       	in	r24, 0x04	; 4
      b5e:	80 61       	ori	r24, 0x10	; 16
      b60:	84 b9       	out	0x04, r24	; 4
-     b62:	84 b1       	in	r24, 0x04	; 4
-     b64:	81 60       	ori	r24, 0x01	; 1
-     b66:	84 b9       	out	0x04, r24	; 4
+     b62:	87 b1       	in	r24, 0x07	; 7
+     b64:	80 64       	ori	r24, 0x40	; 64
+     b66:	87 b9       	out	0x07, r24	; 7
      b68:	8b b1       	in	r24, 0x0b	; 11
      b6a:	80 68       	ori	r24, 0x80	; 128
      b6c:	8b b9       	out	0x0b, r24	; 11
      b6e:	8b b1       	in	r24, 0x0b	; 11
      b70:	80 64       	ori	r24, 0x40	; 64
      b72:	8b b9       	out	0x0b, r24	; 11
-     b74:	88 b1       	in	r24, 0x08	; 8
-     b76:	8f 7b       	andi	r24, 0xBF	; 191
-     b78:	88 b9       	out	0x08, r24	; 8
+     b74:	85 b1       	in	r24, 0x05	; 5
+     b76:	8e 7f       	andi	r24, 0xFE	; 254
+     b78:	85 b9       	out	0x05, r24	; 5
      b7a:	85 b1       	in	r24, 0x05	; 5
      b7c:	80 62       	ori	r24, 0x20	; 32
      b7e:	85 b9       	out	0x05, r24	; 5
      b80:	85 b1       	in	r24, 0x05	; 5
      b82:	80 61       	ori	r24, 0x10	; 16
      b84:	85 b9       	out	0x05, r24	; 5
-     b86:	85 b1       	in	r24, 0x05	; 5
-     b88:	8e 7f       	andi	r24, 0xFE	; 254
-     b8a:	85 b9       	out	0x05, r24	; 5
+     b86:	88 b1       	in	r24, 0x08	; 8
+     b88:	8f 7b       	andi	r24, 0xBF	; 191
+     b8a:	88 b9       	out	0x08, r24	; 8
      b8c:	10 92 c0 00 	sts	0x00C0, r1	; 0x8000c0 <__TEXT_REGION_LENGTH__+0x7f80c0>
      b90:	84 e0       	ldi	r24, 0x04	; 4
      b92:	80 93 c2 00 	sts	0x00C2, r24	; 0x8000c2 <__TEXT_REGION_LENGTH__+0x7f80c2>
@@ -1730,25 +1730,25 @@ bool bno055_is_fully_calibrated(void)
 00000bae <motors_enable_left>:
      bae:	88 23       	and	r24, r24
      bb0:	21 f0       	breq	.+8      	; 0xbba <motors_enable_left+0xc>
-     bb2:	88 b1       	in	r24, 0x08	; 8
-     bb4:	80 64       	ori	r24, 0x40	; 64
-     bb6:	88 b9       	out	0x08, r24	; 8
+     bb2:	85 b1       	in	r24, 0x05	; 5
+     bb4:	81 60       	ori	r24, 0x01	; 1
+     bb6:	85 b9       	out	0x05, r24	; 5
      bb8:	08 95       	ret
-     bba:	88 b1       	in	r24, 0x08	; 8
-     bbc:	8f 7b       	andi	r24, 0xBF	; 191
-     bbe:	88 b9       	out	0x08, r24	; 8
+     bba:	85 b1       	in	r24, 0x05	; 5
+     bbc:	8e 7f       	andi	r24, 0xFE	; 254
+     bbe:	85 b9       	out	0x05, r24	; 5
      bc0:	08 95       	ret
 
 00000bc2 <motors_enable_right>:
      bc2:	88 23       	and	r24, r24
      bc4:	21 f0       	breq	.+8      	; 0xbce <motors_enable_right+0xc>
-     bc6:	85 b1       	in	r24, 0x05	; 5
-     bc8:	81 60       	ori	r24, 0x01	; 1
-     bca:	85 b9       	out	0x05, r24	; 5
+     bc6:	88 b1       	in	r24, 0x08	; 8
+     bc8:	80 64       	ori	r24, 0x40	; 64
+     bca:	88 b9       	out	0x08, r24	; 8
      bcc:	08 95       	ret
-     bce:	85 b1       	in	r24, 0x05	; 5
-     bd0:	8e 7f       	andi	r24, 0xFE	; 254
-     bd2:	85 b9       	out	0x05, r24	; 5
+     bce:	88 b1       	in	r24, 0x08	; 8
+     bd0:	8f 7b       	andi	r24, 0xBF	; 191
+     bd2:	88 b9       	out	0x08, r24	; 8
      bd4:	08 95       	ret
 
 00000bd6 <motors_enable_all>:
