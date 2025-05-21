@@ -43,11 +43,11 @@ const int LEFT_ENA_PIN = 5;     // Connect to ENA- of left motor (PC6)
 // Right motor pins
 const int RIGHT_PULSE_PIN = 9;  // Connect to PUL- of right motor (PB5/OC1A)
 const int RIGHT_DIR_PIN = 8;    // Connect to DIR- of right motor (PB4)
-const int RIGHT_ENA_PIN = 10;   // Connect to ENA- of right motor (PB0) - Not terminated at header currently
+const int RIGHT_ENA_PIN = A0;   // Connect to ENA- of right motor (PB0) - Not terminated at header currently
 
 // Encoder pins
-const int LEFT_ENCODER_PIN_A = 0;  // Left motor encoder channel A
-const int LEFT_ENCODER_PIN_B = 1;  // Left motor encoder channel B
+const int LEFT_ENCODER_PIN_A = 1;  // Left motor encoder channel A
+const int LEFT_ENCODER_PIN_B = 0;  // Left motor encoder channel B
 
 // Motion parameters
 const int PULSE_PER_REV = 200;  // For full step mode (1.8° motor)

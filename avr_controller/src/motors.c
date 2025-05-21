@@ -4,6 +4,7 @@
  * Created: 5/6/2025 4:26:05 AM
  * Author: Endeavor360
  */
+
 #include <avr/io.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -91,7 +92,7 @@ void motors_set_dir_right(bool fwd)
 void motors_set_speed_left(uint16_t rpm)
 {
 	uint32_t freq = rpm_to_freq(rpm);
-	TCCR4B &= ~(_BV(CS43) | _BV(CS42) |_BV(CS41) | _BV(CS40));
+	TCCR4B &= ~(_BV(CS43) | _BV(CS42) | _BV(CS41) | _BV(CS40));
 	if (rpm > 500)
 	{
 		// for higher rpm, set shorter lower prescaler with higher pulse frequency to go faster

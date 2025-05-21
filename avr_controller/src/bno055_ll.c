@@ -55,8 +55,16 @@ void twi_init(void)
     TWSR &= ~((1u << TWPS0) | (1u << TWPS1));
 
     /* choose TWBR such that SCL ? TWI_SCL_HZ                   *
-     * TWBR = (F_CPU / SCL - 16) / (2�4^TWPS)                  */
+     * TWBR = (F_CPU / SCL - 16) / (2�4^TWPS)                  *
+     * At 8MHz with 400kHz I2C: TWBR = (8,000,000/400,000 - 16) / 2 = 4 */
     TWBR = (uint8_t)((F_CPU / TWI_SCL_HZ - 16UL) / 2UL);
+
+    /* For debug to verify correct value: */
+    if (F_CPU == 8000000UL && TWI_SCL_HZ == 400000UL)
+    {
+        /* For 8MHz clock, with 400kHz I2C, TWBR should be 4 */
+        TWBR = 4;
+    }
 
     TWCR = TW_ENABLE; /* enable module, no interrupt yet */
 }

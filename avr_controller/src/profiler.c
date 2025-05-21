@@ -1,16 +1,6 @@
 /*
- * profiler.h
+ * profiler.c
  *
- * Created: 5/6/2025 4:34:48 AM
+ * Created: 5/21/2025 9:21:21 PM
  *  Author: Endeavor360
  */ 
-
-
-#ifndef PROFILER_H_
-#define PROFILER_H_
-
-
-
-
-
-#endif /* PROFILER_H_ */
