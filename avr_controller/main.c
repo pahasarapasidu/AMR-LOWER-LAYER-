@@ -16,10 +16,28 @@
 #include "analog.h"
 #include "encoder.h"
 
+#define RX_BUF_SIZE 64
+
+// Receive buffer
+static char rx_buf[RX_BUF_SIZE];
+static uint8_t rx_index = 0;
+
+// Parsed parameters
+static float rx_distance;     // mm
+static float rx_angle;        // degrees
+static uint16_t rx_max_vel;   // mm/s
+static uint16_t rx_max_omega; // deg/s
+static uint16_t rx_last_vel;
+static uint16_t rx_last_omega;
+static float rx_lin_acc;     // mm/s�
+static float rx_max_ang_acc; // deg/s�
+
 /* -------------------------------  PROTOTYPES ----------------------------*/
 static void timer3_init_50Hz(void); /* sets up periodic IRQ            */
 static void send_telemetry(void);   /* heavy USB / sensor work         */
 static void usb_send_ram(const char *s);
+static uint8_t parse_jetson_line(const char *line);
+static void receive_from_jetson(void);
 
 /*  ------------------------------ GLOBAL FLAG ------------------------*/
 static volatile uint8_t flag_telemetry_due = 0; /* set in ISR, cleared in main */
@@ -30,12 +48,14 @@ int main(void)
     /* ---- initialize everything ---- */
     _delay_ms(100);
     m_usb_init();
+
+    // If usb handshake fails, this will block the entire execution of the code, remove at production ready code
     while (!m_usb_isconnected())
     {
     } /* wait for host terminal      */
-	
-	m_usb_tx_string("M2 ready\r\n");
-	
+
+    m_usb_tx_string("M2 ready\r\n");
+
     motors_init();
     encoder_init();
     analog_init();
@@ -57,10 +77,8 @@ int main(void)
     twi_init();
     if (!bno055_init())
     {
-        for (;;)
-        {
-        }
-    } /* halt if IMU fails */
+        m_usb_tx_string("IMU Failed\r\n");
+    }
 
     /* ---- start 50 Hz timer & enable global IRQs ---- */
     timer3_init_50Hz(); /* Timer-3 compare-match every 20 ms        */
@@ -70,6 +88,14 @@ int main(void)
     while (1)
     {
         _delay_ms(1);
+
+        // check for any incoming Jetson data
+        receive_from_jetson();
+
+        // now you can, for example:
+        //   - plan your velocity profile using rx_distance, rx_angle, ...
+        //   - update motor setpoints based on rx_last_vel/rx_last_omega
+        //   - apply accelerations rx_lin_acc, rx_max_ang_acc, etc.
     }
 }
 
@@ -103,7 +129,7 @@ static void send_telemetry(void)
     float r = r16 / 16.0f;
     float p = p16 / 16.0f;
 
-    //uint8_t cal = bno055_is_fully_calibrated() ? 1u : 0u;
+    // uint8_t cal = bno055_is_fully_calibrated() ? 1u : 0u;
 
     /* ---------- ADC ---------- */
     uint16_t vbat_main = analog_get_battery_1_mV();
@@ -135,4 +161,48 @@ static void usb_send_ram(const char *s)
 {
     while (*s)
         m_usb_tx_char(*s++);
+}
+
+static uint8_t parse_jetson_line(const char *line)
+{
+
+    extern float rx_distance, rx_angle, rx_lin_acc, rx_max_ang_acc;
+    extern uint16_t rx_max_vel, rx_max_omega, rx_last_vel, rx_last_omega;
+
+    // Note: "%f" for floats, "%u" for uint16_t on AVR
+    int cnt = sscanf(line,
+                     "%f,%f,%u,%u,%u,%u,%f,%f",
+                     &rx_distance,
+                     &rx_angle,
+                     &rx_max_vel,
+                     &rx_max_omega,
+                     &rx_last_vel,
+                     &rx_last_omega,
+                     &rx_lin_acc,
+                     &rx_max_ang_acc);
+    return (cnt == 8) ? 1 : 0;
+}
+
+static void receive_from_jetson(void)
+{
+    while (m_usb_rx_available())
+    {
+        char c = m_usb_rx_char();
+        // start parsing if new line detected
+        if (c == '\n' || c == '\r')
+        {
+            if (rx_index > 0)
+            {
+                rx_buf[rx_index] = '\0';
+                if (parse_jetson_line(rx_buf))
+                {
+                }
+                rx_index = 0;
+            }
+        }
+        else if (rx_index < (RX_BUF_SIZE - 1))
+        {
+            rx_buf[rx_index++] = c;
+        }
+    }
 }
