@@ -6,6 +6,7 @@
  */
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include "motors.h"
@@ -14,6 +15,11 @@
 /* private state ----------------------------------------------------------- */
 static uint8_t left_top;
 static uint16_t right_top;
+
+/* ----------- hardware‐assisted edge (toggle) counters & ISRs ------------   */
+
+volatile uint32_t left_edge_cnt  = 0;
+volatile uint32_t right_edge_cnt = 0;
 
 /* helpers ----------------------------------------------------------------- */
 static inline uint32_t rpm_to_freq(uint16_t rpm)
@@ -57,7 +63,20 @@ void motors_init(void)
 	// — Timer1 (16-bit) for RIGHT motor PUL on OC1A (PB5) —
 	TCCR1A = _BV(COM1A0); // toggle OC1A on compare
 	TCCR1B = _BV(WGM12);  // CTC mode, no clock yet
+	
+	
+	/* enable OC‐compare interrupts for step counting */
+	TIMSK4 |= _BV(OCIE4D);   // Timer4 Compare‐D
+	TIMSK1 |= _BV(OCIE1A);   // Timer1 Compare‐A
 }
+
+/* ISR: each toggle = one edge */
+ISR(TIMER4_COMPD_vect) {
+	 left_edge_cnt++;
+	  }
+ISR(TIMER1_COMPA_vect) { 
+	right_edge_cnt++; 
+	}
 
 void motors_enable_left(bool en)
 {
@@ -129,7 +148,7 @@ void motors_set_speed_right(uint16_t rpm)
 	right_top = (uint16_t)top;
 	OCR1A = right_top;
 
-	/* start Timer-1 with /1024 prescale */
+	/* start Timer-1 with /1024 pre-scale */
 	TCCR1B &= ~(_BV(CS12) | _BV(CS11) | _BV(CS10)); /* clear first   */
 	TCCR1B |= PRE_SCALE_TIMER1;
 }
@@ -188,4 +207,39 @@ void motors_stop_all(void)
 	/* stop timers � clear prescaler bits */
 	TCCR1B &= ~(_BV(CS12) | _BV(CS11) | _BV(CS10));
 	TCCR4B &= ~(_BV(CS43) | _BV(CS42) | _BV(CS41) | _BV(CS40));
+}
+
+
+/* — API to reset & read counts atomically — */
+void motors_reset_edge_counts(void)
+{
+	uint8_t oldSREG = SREG; cli();
+	left_edge_cnt = right_edge_cnt = 0;
+	SREG = oldSREG;
+}
+
+uint32_t motors_get_edge_count_left(void)
+{
+	uint32_t c; uint8_t oldSREG = SREG; cli();
+	c = left_edge_cnt;
+	SREG = oldSREG;
+	return c;
+}
+
+uint32_t motors_get_edge_count_right(void)
+{
+	uint32_t c; uint8_t oldSREG = SREG; cli();
+	c = right_edge_cnt;
+	SREG = oldSREG;
+	return c;
+}
+
+uint32_t motors_get_step_count_left(void)
+{
+	return motors_get_edge_count_left() >> 1;
+}
+
+uint32_t motors_get_step_count_right(void)
+{
+	return motors_get_edge_count_right() >> 1;
 }

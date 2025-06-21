@@ -201,7 +201,12 @@
 #define EMG_BTN_PORT   PORTB
 #define EMG_BTN_PINREG PINB
 #define EMG_BTN_BIT    3    // PB3 -> PCINT3
-    
+
+/* ================= PROFILER PARAMETERS ================= */
+
+#define ENCODER_PPR         1000U        // quadrature pulses per channel
+#define WHEEL_DIAMETER_MM   200.0f        // wheel diameter [mm]
+#define WHEEL_BASE_MM       530.0f       // track width: distance between wheels [mm]    
 
 
 #endif // CONFIG_H

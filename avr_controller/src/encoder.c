@@ -15,9 +15,7 @@ static volatile int32_t left_cnt, right_cnt;
 static volatile uint8_t left_last_state, right_last_state;
 
 /* forward */
-static inline void enc_handle(volatile int32_t *cnt,
-volatile uint8_t *last,
-uint8_t a, uint8_t b)
+static inline void enc_handle(volatile int32_t *cnt, volatile uint8_t *last, uint8_t a, uint8_t b)
 {
 	uint8_t encoded    = (a<<1) | b;
 	uint8_t trans      = (*last<<2) | encoded;
@@ -97,7 +95,7 @@ ISR(PCINT0_vect)
 	/* 1) emergency check */
 	if (!(EMG_BTN_PINREG & _BV(EMG_BTN_BIT))) {
 		/* button is pressed (active-low) */
-		// TODO: call your emergency handler here
+		// TODO: call emergency handler here
 		// emergency_button_pressed();
 	}
 

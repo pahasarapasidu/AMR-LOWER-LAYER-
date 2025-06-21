@@ -9,18 +9,21 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include <util/delay.h>
+#include <math.h>
 
 #include "motors.h"
 #include "m_usb.h"
 #include "bno055_ll.h"
 #include "analog.h"
 #include "encoder.h"
+#include "profiler.h"
 
 #define RX_BUF_SIZE 64
 
 // Receive buffer
 static char rx_buf[RX_BUF_SIZE];
 static uint8_t rx_index = 0;
+static bool profile_requested = false;
 
 // Parsed parameters
 static float rx_distance;     // mm
@@ -60,17 +63,16 @@ int main(void)
     encoder_init();
     analog_init();
 
-    // /* --------------------- quick test sequence ------------------------------ */
     motors_enable_left(true);
     motors_enable_right(true);
-
-    motors_set_dir_left(false);
-    motors_set_dir_right(true);
-    _delay_ms(2);
-    motors_set_speed_left(1000);
-    motors_set_speed_right(1000);
-    _delay_ms(20000);
-    motors_stop_all();
+    // /* --------------------- quick test sequence ------------------------------ */
+    // motors_set_dir_left(false);
+    // motors_set_dir_right(true);
+    //_delay_ms(2);
+    // motors_set_speed_left(1000);
+    // motors_set_speed_right(1000);
+    //_delay_ms(20000);
+    // motors_stop_all();
 
     m_usb_tx_string("M2 ready\r\n");
 
@@ -87,15 +89,35 @@ int main(void)
     /* ---------------- MAIN LOOP ---------------------- */
     while (1)
     {
-        _delay_ms(1);
-
         // check for any incoming Jetson data
         receive_from_jetson();
 
-        // now you can, for example:
-        //   - plan your velocity profile using rx_distance, rx_angle, ...
-        //   - update motor setpoints based on rx_last_vel/rx_last_omega
-        //   - apply accelerations rx_lin_acc, rx_max_ang_acc, etc.
+        if (profile_requested)
+        {
+            // decide pure turn vs straight?line
+            if (fabsf(rx_angle) > 0.01f && fabsf(rx_distance) < 1e-3f)
+            {
+                profiler_turn_init(rx_angle,
+                                   rx_max_omega,
+                                   rx_max_ang_acc);
+            }
+            else
+            {
+                profiler_init(rx_distance,
+                              rx_max_vel,
+                              rx_lin_acc);
+            }
+            profile_requested = false;
+        }
+
+        if (profiler_turn_is_running())
+        {
+            profiler_turn_update();
+        }
+        else if (profiler_is_running())
+        {
+            profiler_update();
+        }
     }
 }
 

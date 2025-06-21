@@ -21,7 +21,8 @@ main.d main.o: .././main.c ../include/config.h \
  ../include/motors.h ../include/m_usb.h ../include/config.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\avr\pgmspace.h \
  c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\include\stdlib.h \
- ../include/bno055_ll.h ../include/analog.h ../include/encoder.h
+ ../include/bno055_ll.h ../include/analog.h ../include/encoder.h \
+ ../include/profiler.h
 
 ../include/config.h:
 
@@ -78,3 +79,5 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\avr8\avr8-gnu-toolchain\avr\
 ../include/analog.h:
 
 ../include/encoder.h:
+
+../include/profiler.h:
