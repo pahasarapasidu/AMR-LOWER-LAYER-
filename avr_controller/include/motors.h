@@ -24,8 +24,8 @@ void motors_move_left(int32_t steps);
 void motors_move_right(int32_t steps);
 void motors_stop_all(void);
 
-/* — Step?count feedback (via OC?compare interrupts) — */
-void    motors_reset_edge_counts(void);
+/* ï¿½ Step?count feedback (via OC?compare interrupts) ï¿½ */
+void motors_reset_edge_counts(void);
 uint32_t motors_get_edge_count_left(void);
 uint32_t motors_get_edge_count_right(void);
 uint32_t motors_get_step_count_left(void);

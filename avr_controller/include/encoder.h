@@ -21,5 +21,7 @@ int32_t  encoder_get_right(void);
 void     encoder_reset_left(void);
 void     encoder_reset_right(void);
 
+bool encoder_emergency_hit(void);
+
 
 #endif /* ENCODERS_H_ */

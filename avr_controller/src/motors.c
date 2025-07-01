@@ -13,12 +13,12 @@
 #include "config.h"
 
 /* private state ----------------------------------------------------------- */
-static uint8_t left_top;
+static uint16_t left_top;
 static uint16_t right_top;
 
 /* ----------- hardware‐assisted edge (toggle) counters & ISRs ------------   */
 
-volatile uint32_t left_edge_cnt  = 0;
+volatile uint32_t left_edge_cnt = 0;
 volatile uint32_t right_edge_cnt = 0;
 
 /* helpers ----------------------------------------------------------------- */
@@ -49,34 +49,28 @@ void motors_init(void)
 	RIGHT_DIR_PORT |= _BV(RIGHT_DIR_BIT);
 	RIGHT_ENA_PORT &= ~_BV(RIGHT_ENA_BIT);
 
-	// — Timer4 (10-bit) for LEFT motor PUL on OC4D (PD7) —
-	// Configure Timer4 for PWM mode with proper frequency
-	TCCR4A = 0; // No PWM mode for channel A and B
-	// COM4D1:0 = 01 for toggle OC4D on compare match
-	TCCR4C = _BV(COM4D0);
-	// PWM4D = 0 (default) disables PWM mode for OC4D
-	// WGM41:0 = 01 for PWM mode with OCR4C as TOP
-	TCCR4D = _BV(WGM40);
-	// No clock yet, will be started when setting speed
-	TCCR4B = 0;
+	/* — Timer-3 (16-bit) drives LEFT motor PUL on OC3A (PC6/D5) — */
+	TCCR3A = _BV(COM3A0); /* toggle OC3A on compare match          */
+	TCCR3B = _BV(WGM32);  /* CTC mode (TOP = OCR3A), clk stopped   */
 
-	// — Timer1 (16-bit) for RIGHT motor PUL on OC1A (PB5) —
-	TCCR1A = _BV(COM1A0); // toggle OC1A on compare
-	TCCR1B = _BV(WGM12);  // CTC mode, no clock yet
-	
-	
-	/* enable OC‐compare interrupts for step counting */
-	TIMSK4 |= _BV(OCIE4D);   // Timer4 Compare‐D
-	TIMSK1 |= _BV(OCIE1A);   // Timer1 Compare‐A
+	/* — Timer-1 (16-bit) drives RIGHT motor PUL on OC1A (PB5/D9) — */
+	TCCR1A = _BV(COM1A0); /* toggle OC1A on compare match          */
+	TCCR1B = _BV(WGM12);  /* CTC mode, clk stopped                 */
+
+	/* enable OC-compare interrupts for edge counting ------------------ */
+	TIMSK3 |= _BV(OCIE3A); /* Timer-3 Compare-A                     */
+	TIMSK1 |= _BV(OCIE1A); /* Timer-1 Compare-A                     */
 }
 
-/* ISR: each toggle = one edge */
-ISR(TIMER4_COMPD_vect) {
-	 left_edge_cnt++;
-	  }
-ISR(TIMER1_COMPA_vect) { 
-	right_edge_cnt++; 
-	}
+/* ISR: each toggle = one edge ----------------------------------------- */
+ISR(TIMER3_COMPA_vect)
+{
+	left_edge_cnt++;
+}
+ISR(TIMER1_COMPA_vect)
+{
+	right_edge_cnt++;
+}
 
 void motors_enable_left(bool en)
 {
@@ -111,33 +105,16 @@ void motors_set_dir_right(bool fwd)
 void motors_set_speed_left(uint16_t rpm)
 {
 	uint32_t freq = rpm_to_freq(rpm);
-	TCCR4B &= ~(_BV(CS43) | _BV(CS42) | _BV(CS41) | _BV(CS40));
-	if (rpm > 500)
-	{
-		// for higher rpm, set shorter lower prescaler with higher pulse frequency to go faster
-		left_top = (uint16_t)(F_CPU / (2UL * freq * CLOCK_DIVISOR_TIMER4_HIGH) - 1UL);
+	uint32_t top = (F_CPU / (2UL * freq * CLOCK_DIVISOR_TIMER3)) - 1UL;
+	if (top > 0xFFFF)
+		top = 0xFFFF; /* clamp to 16-bit */
 
-		if (left_top > 255)
-			left_top = 255; // Timer4 is 8-bit in this mode
+	left_top = (uint16_t)top;
+	OCR3A = left_top;
 
-		OCR4C = left_top;	  // Set TOP value
-		OCR4D = left_top / 2; // Set compare value for 50% duty cycle
-
-		TCCR4B |= PRE_SCALE_TIMER4_HIGH;
-	}
-	else
-	{
-		// for lower rpm, set shorter higher prescaler wit lower pulse frequency to go slower
-		left_top = (uint16_t)(F_CPU / (2UL * freq * CLOCK_DIVISOR_TIMER4_LOW) - 1UL);
-
-		if (left_top > 255)
-			left_top = 255; // Timer4 is 8-bit in this mode
-
-		OCR4C = left_top;	  // Set TOP value
-		OCR4D = left_top / 2; // Set compare value for 50% duty cycle
-
-		TCCR4B |= PRE_SCALE_TIMER4_LOW;
-	}
+	/* start Timer-3 with /1024 prescale */
+	TCCR3B &= ~(_BV(CS32) | _BV(CS31) | _BV(CS30)); /* clear first   */
+	TCCR3B |= PRE_SCALE_TIMER3;
 }
 
 void motors_set_speed_right(uint16_t rpm)
@@ -201,26 +178,26 @@ void motors_move_right(int32_t steps)
 
 void motors_stop_all(void)
 {
-	/* disable drivers */
 	motors_enable_all(false);
 
-	/* stop timers � clear prescaler bits */
-	TCCR1B &= ~(_BV(CS12) | _BV(CS11) | _BV(CS10));
-	TCCR4B &= ~(_BV(CS43) | _BV(CS42) | _BV(CS41) | _BV(CS40));
+	TCCR1B &= ~(_BV(CS12) | _BV(CS11) | _BV(CS10)); /* stop Timer-1 */
+	TCCR3B &= ~(_BV(CS32) | _BV(CS31) | _BV(CS30)); /* stop Timer-3 */
 }
-
 
 /* — API to reset & read counts atomically — */
 void motors_reset_edge_counts(void)
 {
-	uint8_t oldSREG = SREG; cli();
+	uint8_t oldSREG = SREG;
+	cli();
 	left_edge_cnt = right_edge_cnt = 0;
 	SREG = oldSREG;
 }
 
 uint32_t motors_get_edge_count_left(void)
 {
-	uint32_t c; uint8_t oldSREG = SREG; cli();
+	uint32_t c;
+	uint8_t oldSREG = SREG;
+	cli();
 	c = left_edge_cnt;
 	SREG = oldSREG;
 	return c;
@@ -228,7 +205,9 @@ uint32_t motors_get_edge_count_left(void)
 
 uint32_t motors_get_edge_count_right(void)
 {
-	uint32_t c; uint8_t oldSREG = SREG; cli();
+	uint32_t c;
+	uint8_t oldSREG = SREG;
+	cli();
 	c = right_edge_cnt;
 	SREG = oldSREG;
 	return c;

@@ -9,6 +9,7 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include <util/delay.h>
+#include <stdbool.h> 
 #include <math.h>
 
 #include "motors.h"
@@ -32,12 +33,12 @@ static uint16_t rx_max_vel;   // mm/s
 static uint16_t rx_max_omega; // deg/s
 static uint16_t rx_last_vel;
 static uint16_t rx_last_omega;
-static float rx_lin_acc;     // mm/s�
-static float rx_max_ang_acc; // deg/s�
+static float rx_lin_acc;     // mm/s
+static float rx_max_ang_acc; // deg/s
 
 /* -------------------------------  PROTOTYPES ----------------------------*/
-static void timer3_init_50Hz(void); /* sets up periodic IRQ            */
-static void send_telemetry(void);   /* heavy USB / sensor work         */
+static void timer4_init_50Hz(void);           /* sets up periodic IRQ            */
+static void send_telemetry(bool emerg); /* heavy USB / sensor work         */
 static void usb_send_ram(const char *s);
 static uint8_t parse_jetson_line(const char *line);
 static void receive_from_jetson(void);
@@ -53,9 +54,9 @@ int main(void)
     m_usb_init();
 
     // If usb handshake fails, this will block the entire execution of the code, remove at production ready code
-    while (!m_usb_isconnected())
-    {
-    } /* wait for host terminal      */
+    //while (!m_usb_isconnected())
+    //{
+    //} /* wait for host terminal      */
 
     m_usb_tx_string("M2 ready\r\n");
 
@@ -65,14 +66,14 @@ int main(void)
 
     motors_enable_left(true);
     motors_enable_right(true);
-    // /* --------------------- quick test sequence ------------------------------ */
-    // motors_set_dir_left(false);
-    // motors_set_dir_right(true);
-    //_delay_ms(2);
-    // motors_set_speed_left(1000);
-    // motors_set_speed_right(1000);
-    //_delay_ms(20000);
-    // motors_stop_all();
+
+    motors_set_dir_left(true);
+    motors_set_dir_right(false);
+    _delay_ms(2);
+    motors_set_speed_left(100);
+    motors_set_speed_right(100);
+
+    _delay_ms(5000);
 
     m_usb_tx_string("M2 ready\r\n");
 
@@ -83,7 +84,7 @@ int main(void)
     }
 
     /* ---- start 50 Hz timer & enable global IRQs ---- */
-    timer3_init_50Hz(); /* Timer-3 compare-match every 20 ms        */
+    timer4_init_50Hz(); /* Timer-3 compare-match every 20 ms        */
     sei();              /* global interrupt enable                 */
 
     /* ---------------- MAIN LOOP ---------------------- */
@@ -92,54 +93,76 @@ int main(void)
         // check for any incoming Jetson data
         receive_from_jetson();
 
-        if (profile_requested)
+        /* ---------- Emergency Button press status ---------- */
+        bool emerg = encoder_emergency_hit();
+
+        if (flag_telemetry_due)
         {
-            // decide pure turn vs straight?line
-            if (fabsf(rx_angle) > 0.01f && fabsf(rx_distance) < 1e-3f)
-            {
-                profiler_turn_init(rx_angle,
-                                   rx_max_omega,
-                                   rx_max_ang_acc);
-            }
-            else
-            {
-                profiler_init(rx_distance,
-                              rx_max_vel,
-                              rx_lin_acc);
-            }
-            profile_requested = false;
+            send_telemetry(emerg);
+            flag_telemetry_due = 0;
         }
 
-        if (profiler_turn_is_running())
+        if (emerg)
         {
-            profiler_turn_update();
-        }
-        else if (profiler_is_running())
-        {
-            profiler_update();
+            if (profile_requested)
+            {
+                // decide pure turn vs straight?line
+                if (fabsf(rx_angle) > 0.01f && fabsf(rx_distance) < 1e-3f)
+                {
+                    profiler_turn_init(rx_angle,
+                                       rx_max_omega,
+                                       rx_max_ang_acc);
+                }
+                else
+                {
+                    profiler_init(rx_distance,
+                                  rx_max_vel,
+                                  rx_lin_acc);
+                }
+                profile_requested = false;
+            }
+
+            if (profiler_turn_is_running())
+            {
+                profiler_turn_update();
+            }
+            else if (profiler_is_running())
+            {
+                profiler_update();
+            }
         }
     }
 }
 
-/* --------------------- TIMER-3 INITIALISATION (CTC, 50 Hz) ------------------
-   16 MHz / 256 prescale = 62 500 Hz
-   62 500 Hz 0.02 s = 1 250 counts ? OCR3A = 1249               */
-static void timer3_init_50Hz(void)
+/* -------------------- TIMER-4 INITIALISATION (CTC, 50 Hz) --------------------
+   16 MHz / 2048 = 7812.5 Hz
+   7812.5 Hz × 0.01 s ≈ 78 → OCR4A = 78 ⇒ 100.08 Hz         */
+static void timer4_init_50Hz(void)
 {
-    TCCR3A = 0;                          /* normal port operation       */
-    TCCR3B = (1 << WGM32) | (1 << CS32); /* CTC, prescaler = 256        */
-    OCR3A = 1249;
-    TIMSK3 = (1 << OCIE3A); /* enable compare-match A IRQ  */
+    /* reset all Timer-4 control registers (mandatory for this timer) */
+    TCCR4A = 0;
+    TCCR4B = 0;
+    TCCR4C = 0;
+    TCCR4D = 0; // set WGM40 and WGM41 to normal mode
+
+    TCNT4 = 0;  /* start from zero                        */
+    OCR4A = 78; /* compare after 312 counts (~20 ms)      */
+
+    TIMSK4 |= _BV(OCIE4A); /* enable Compare-A interrupt             */
+
+    /* start clock: prescaler = 2048  →  CS43 | CS41                        */
+    TCCR4B |= _BV(CS43) | _BV(CS42);
 }
 
-/* ------------------------- TIMER-3 COMPARE ISR --------------------------- */
-ISR(TIMER3_COMPA_vect)
+/* ----------------------- TIMER-4 COMPARE ISR --------------------------- */
+ISR(TIMER4_COMPA_vect)
 {
-    send_telemetry(); /* quick! no heavy work here   */
+    TCNT4 = 0;              /* emulate CTC                */
+    flag_telemetry_due = 1; /* signal main loop           */
 }
 
 /* ------------------- TELEMETRY SENDER (called from main) ----------------- */
-static void send_telemetry(void)
+static void send_telemetry(bool emerg)
 {
     char line[160];
 
@@ -165,14 +188,9 @@ static void send_telemetry(void)
     int32_t encR = encoder_get_right();
 
     /* ---------- Format & ship ---------- */
+    /* Packet Structure: { Yaw Roll Pitch encoderLeft encoderRight bat1Voltage bat2Voltage LeftCliff CenterCliff RightCliff emergencyFlag }  */
     snprintf(line, sizeof(line),
-             "H:%6.2f R:%6.2f P:%6.2f  "
-             "VB:%umV/%umV   Cliff:%u %u %u  "
-             "Enc:%11ld/%11ld\r\n", /* 11 chars wide, signed     */
-             h, r, p,               /* argument now matches %u   */
-             vbat_main, vbat_aux,
-             cliffL, cliffF, cliffR,
-             (long)encL, (long)encR); /* cast silences -format    */
+             "%6.2f %6.2f %6.2f %10ld %10ld %u %u %u %u %u %u\r\n", h, r, p, (long)encL, (long)encR, vbat_main, vbat_aux, cliffL, cliffF, cliffR, emerg);
 
     usb_send_ram(line);
     m_usb_tx_push();
