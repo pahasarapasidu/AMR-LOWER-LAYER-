@@ -144,6 +144,9 @@
     <Compile Include="include\profiler.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="include\systime.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
@@ -163,6 +166,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\profiler.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\systime.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

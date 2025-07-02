@@ -205,7 +205,10 @@
 
 #define ENCODER_PPR         1000U        // quadrature pulses per channel
 #define WHEEL_DIAMETER_MM   200.0f        // wheel diameter [mm]
-#define WHEEL_BASE_MM       530.0f       // track width: distance between wheels [mm]    
+#define WHEEL_BASE_MM       500.0f       // track width: distance between wheels [mm] 
+#define GEAR_RATIO 10   
 
+#define MM_PER_ROTATION  (M_PI * WHEEL_DIAMETER_MM)
+#define DEG_PER_MM_DIFF  (180.0f / (M_PI * WHEEL_BASE_MM))
 
 #endif // CONFIG_H

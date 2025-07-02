@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include "encoder.h"
 #include "profiler.h"
 #include "motors.h"
 #include "config.h"
@@ -41,8 +42,8 @@ void profiler_init(float distance_mm,
 	lin_counts_per_mm = (4.0f * (float)ENCODER_PPR) / circ;
 
 	/* reset & snapshot encoder */
-	motors_reset_edge_counts();
-	lin_start_steps = motors_get_step_count_left();
+	lin_start_steps = (encoder_get_left() + encoder_get_right())/2;
+	encoder_reset_both();
 
 	lin_running = true;
 }
@@ -53,7 +54,7 @@ void profiler_update(void)
 		return;
 
 	/* distance so far [mm] */
-	uint32_t steps = motors_get_step_count_left() - lin_start_steps;
+	uint32_t steps = (encoder_get_left() + encoder_get_right())/2 - lin_start_steps;
 	float dist_mm = steps / lin_counts_per_mm;
 
 	/* trapezoid breakpoints */
@@ -119,10 +120,10 @@ void profiler_turn_init(float angle_deg,
 	turn_counts_per_mm = (4.0f * (float)ENCODER_PPR) / circ;
 
 	/* 4) Reset & snapshot both encoders */
-	motors_reset_edge_counts();
-	turn_start_left = motors_get_step_count_left();
-	turn_start_right = motors_get_step_count_right();
-
+	turn_start_left = encoder_get_left();
+	turn_start_right = encoder_get_right();
+	encoder_reset_both();
+	
 	turn_running = true;
 }
 
