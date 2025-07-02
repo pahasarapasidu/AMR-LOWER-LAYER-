@@ -45,20 +45,22 @@ static inline void enc_handle(volatile int32_t *cnt, volatile uint8_t *last, uin
 /* Initialise both encoders + emergency pin */
 void encoder_init(void)
 {
-	/*------------- LEFT: PD2/PD3 as INT0/INT1 -------------*/
+	/*------------- LEFT: PD2/PD3 as INT2/INT3 -------------*/
 	ENC_L_A_DDR &= ~_BV(ENC_L_A_BIT);
 	ENC_L_B_DDR &= ~_BV(ENC_L_B_BIT);
 	ENC_L_A_PORT |= _BV(ENC_L_A_BIT);
 	ENC_L_B_PORT |= _BV(ENC_L_B_BIT);
 
-	/* INT0 on PD2, any edge */
-	EICRA |= _BV(ISC00);
-	EICRA &= ~_BV(ISC01);
-	EIMSK |= _BV(INT0);
-	/* INT1 on PD3, any edge */
-	EICRA |= _BV(ISC10);
-	EICRA &= ~_BV(ISC11);
-	EIMSK |= _BV(INT1);
+	/* INT2 on PD2, any edge */
+	EICRA |= _BV(ISC20);     
+	EICRA &= ~_BV(ISC21);
+	EIMSK |= _BV(INT2);
+
+	/* INT3 on PD3, any edge */
+	EICRA |= _BV(ISC30);
+	EICRA &= ~_BV(ISC31);
+	EIMSK |= _BV(INT3);
+
 
 	/* Seed last_state */
 	left_last_state = ((ENC_L_A_PINREG & _BV(ENC_L_A_BIT)) ? 2 : 0) | ((ENC_L_B_PINREG & _BV(ENC_L_B_BIT)) ? 1 : 0);
@@ -73,6 +75,11 @@ void encoder_init(void)
 	ENC_R_A_PORT |= _BV(ENC_R_A_BIT);
 	EMG_BTN_PORT |= _BV(EMG_BTN_BIT);
 
+	/* INT6 on PE6 � any edge */
+	EICRB |= _BV(ISC60);  // sense on either edge
+	EICRB &= ~_BV(ISC61); // (leave ISC61 = 0)
+	EIMSK |= _BV(INT6);	  // enable INT6
+
 	/* enable PCINT[7:0] */
 	PCICR |= _BV(PCIE0);
 	/* mask PB4, PB7 */
@@ -84,15 +91,15 @@ void encoder_init(void)
 	left_cnt = right_cnt = 0;
 }
 
-/* ------------ LEFT ISRs (INT0 & INT1) ------------- */
-ISR(INT0_vect)
+/* ------------ LEFT ISRs (INT2 & INT3) ------------- */
+ISR(INT2_vect)
 {
 	uint8_t a = (ENC_L_A_PINREG & _BV(ENC_L_A_BIT)) ? 1 : 0;
 	uint8_t b = (ENC_L_B_PINREG & _BV(ENC_L_B_BIT)) ? 1 : 0;
 	enc_handle(&left_cnt, &left_last_state, a, b);
 }
 
-ISR(INT1_vect)
+ISR(INT3_vect)
 {
 	uint8_t a = (ENC_L_A_PINREG & _BV(ENC_L_A_BIT)) ? 1 : 0;
 	uint8_t b = (ENC_L_B_PINREG & _BV(ENC_L_B_BIT)) ? 1 : 0;
@@ -157,7 +164,7 @@ bool encoder_emergency_hit(void)
 	bool hit;
 	cli(); /* atomic: read-then-clear */
 	hit = emg_flag;
-	// emg_flag = false; //needs to stop all operations in a way that restart can fix it
+	emg_flag = false; // needs to stop all operations in a way that restart can fix it
 	sei();
 	return hit;
 }

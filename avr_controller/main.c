@@ -54,26 +54,15 @@ int main(void)
     m_usb_init();
 
     // If usb handshake fails, this will block the entire execution of the code, remove at production ready code
-    //while (!m_usb_isconnected())
-    //{
-    //} /* wait for host terminal      */
+    while (!m_usb_isconnected())
+    {
+    } /* wait for host terminal      */
 
     m_usb_tx_string("M2 ready\r\n");
 
     motors_init();
     encoder_init();
     analog_init();
-
-    motors_enable_left(true);
-    motors_enable_right(true);
-
-    motors_set_dir_left(true);
-    motors_set_dir_right(false);
-    _delay_ms(2);
-    motors_set_speed_left(100);
-    motors_set_speed_right(100);
-
-    _delay_ms(5000);
 
     m_usb_tx_string("M2 ready\r\n");
 
@@ -88,6 +77,20 @@ int main(void)
     sei();              /* global interrupt enable                 */
 
     /* ---------------- MAIN LOOP ---------------------- */
+	bool  onetime = true;
+	
+	motors_enable_left(true);
+	motors_enable_right(true);
+
+	motors_set_dir_left(true);
+	motors_set_dir_right(false);
+	_delay_ms(2);
+	motors_set_speed_left(360);
+	motors_set_speed_right(360);
+	_delay_ms(10000);
+	
+	motors_stop_all();
+	
     while (1)
     {
         // check for any incoming Jetson data
@@ -101,8 +104,13 @@ int main(void)
             send_telemetry(emerg);
             flag_telemetry_due = 0;
         }
+		
+		if (onetime){
+				
+				onetime = false;
+		}
 
-        if (emerg)
+        if (!emerg)
         {
             if (profile_requested)
             {
@@ -177,20 +185,27 @@ static void send_telemetry(bool emerg)
     // uint8_t cal = bno055_is_fully_calibrated() ? 1u : 0u;
 
     /* ---------- ADC ---------- */
-    uint16_t vbat_main = analog_get_battery_1_mV();
-    uint16_t vbat_aux = analog_get_battery_2_mV();
+    uint16_t vbat_1 = analog_get_battery_1_mV();
+    uint16_t vbat_2 = analog_get_battery_2_mV();
     uint16_t cliffL = analog_get_cliff_left();
-    uint16_t cliffF = analog_get_cliff_front();
+    uint16_t cliffC = analog_get_cliff_front();
     uint16_t cliffR = analog_get_cliff_right();
 
     /* ---------- Encoders ---------- */
     int32_t encL = encoder_get_left();
     int32_t encR = encoder_get_right();
+	
+	// if (encL > 40000){
+	// 	encoder_reset_left();
+	// }
+	// if (encR > 40000){
+	// 	encoder_reset_right();
+	// }
 
     /* ---------- Format & ship ---------- */
     /* Packet Structure: { Yaw Roll Pitch encoderLeft encoderRight bat1Voltage bat2Voltage LeftCliff CenterCliff RightCliff emergencyFlag }  */
     snprintf(line, sizeof(line),
-             "%6.2f %6.2f %6.2f %10ld %10ld %u %u %u %u %u %u\r\n", h, r, p, (long)encL, (long)encR, vbat_main, vbat_aux, cliffL, cliffF, cliffR, emerg);
+             "%6.2f %6.2f %6.2f %10ld %10ld %u %u %u %u %u %u\r\n", h, r, p, (long)encL, (long)encR, vbat_1, vbat_2, cliffL, cliffC, cliffR, emerg);
 
     usb_send_ram(line);
     m_usb_tx_push();

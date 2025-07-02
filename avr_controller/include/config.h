@@ -177,29 +177,29 @@
 #define ENC_L_A_DDR    DDRD
 #define ENC_L_A_PORT   PORTD
 #define ENC_L_A_PINREG PIND
-#define ENC_L_A_BIT    2    // PD2 -> INT0
+#define ENC_L_A_BIT    2    // PD2 -> INT0 ((D1)
 
 #define ENC_L_B_DDR    DDRD
 #define ENC_L_B_PORT   PORTD
 #define ENC_L_B_PINREG PIND
-#define ENC_L_B_BIT    3    // PD3 -> INT1
+#define ENC_L_B_BIT    3    // PD3 -> INT1  (D0)
 
 /* ---- RIGHT encoder ---- */
 #define ENC_R_B_DDR    DDRE
 #define ENC_R_B_PORT   PORTE
 #define ENC_R_B_PINREG PINE
-#define ENC_R_B_BIT    6    // PE6 -> INT6
+#define ENC_R_B_BIT    6    // PE6 -> INT6  (D7)
 
 #define ENC_R_A_DDR    DDRB
 #define ENC_R_A_PORT   PORTB
 #define ENC_R_A_PINREG PINB
-#define ENC_R_A_BIT    4   // PB4 -> PCINT4
+#define ENC_R_A_BIT    4   // PB4 -> PCINT4  (D8)
 
 /* ---- Emergency button (shared PCINT) ---- */
 #define EMG_BTN_DDR    DDRB
 #define EMG_BTN_PORT   PORTB
 #define EMG_BTN_PINREG PINB
-#define EMG_BTN_BIT    7    // PB7 -> PCINT7
+#define EMG_BTN_BIT    7    // PB7 -> PCINT7 (D11)
 
 /* ================= PROFILER PARAMETERS ================= */
 
