@@ -60,7 +60,7 @@
 #endif
 
 /* ------------------- timer prescaler / clock divisors --------------------------- */
-#define CLOCK_DIVISOR          1024U
+#define CLOCK_DIVISOR_TIMER1          1024U
 #define PRE_SCALE_TIMER1       (_BV(CS12) | _BV(CS10))
 
 #define CLOCK_DIVISOR_TIMER3   1024U             
@@ -210,6 +210,6 @@
 #define MM_PER_ROTATION  (M_PI * WHEEL_DIAMETER_MM)
 #define DEG_PER_MM_DIFF  (180.0f / (M_PI * WHEEL_BASE_MM))
 
-#define LOOP_TIME 10
+#define LOOP_TIME 8
 
 #endif // CONFIG_H

@@ -155,11 +155,13 @@ bool motion_turn_finished(void) { return motionType.rotation.state == PS_FINISHE
 
 void motion_start_move(float distance, float top_v, float final_v, float acc)
 {
+	motionType.forward.kind = PK_FORWARD;  // Add this line
 	profile_start(&motionType.forward, distance, top_v, final_v, acc);
 }
 
 void motion_start_turn(float distance, float top_w, float final_w, float acc)
 {
+	motionType.rotation.kind = PK_ROTATION;  // Add this line
 	profile_start(&motionType.rotation, distance, top_w, final_w, acc);
 }
 
@@ -168,6 +170,7 @@ void motion_update(void)
 	profile_update(&motionType.forward);
 	profile_update(&motionType.rotation);
 }
+
 
 void motion_wait_until_position(float position_mm)
 {

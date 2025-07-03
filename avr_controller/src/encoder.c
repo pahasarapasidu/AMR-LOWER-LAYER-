@@ -207,7 +207,6 @@ void encoder_odometry_reset(void)
 
 		prev_ts_us = micros64(); /* ← use global timer0 based time-base */
 		loop_dt_us = 1;
-		emg_flag = false;
 	}
 }
 
