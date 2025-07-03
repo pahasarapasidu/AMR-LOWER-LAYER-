@@ -1,6 +1,6 @@
 /* =========================================================
  * encoder.c   Robust quadrature-encoder reader (ATmega32U4)
- * 4� quadrature decoder with mixed INT/PCINT
+ * 4 quadrature decoder with mixed INT/PCINT
  *
  * Author : Endeavor360
  * Date   : 25-May-2025

@@ -137,16 +137,12 @@ void motors_set_speed_both(uint16_t vel_left, uint16_t vel_right)
 	motors_set_speed_right(vel_right);
 }
 
-void motors_update(motion *ctx, float velocity, float omega)
+void motors_update( float velocity, float omega)
 {
-	/* Store the latest set-points */
-	ctx->velocity = velocity;
-	ctx->omega    = omega;
-
 	/* Feed-forward terms based on desired wheel tangential speed */
-	float tangent_speed = ctx->omega * WHEEL_BASE_MM * M_PI/ 360.0 ;
-	float left_speed    = ctx->velocity - tangent_speed;
-	float right_speed   = ctx->velocity + tangent_speed;
+	float tangent_speed = omega * WHEEL_BASE_MM * M_PI/ 360.0 ;
+	float left_speed    = velocity - tangent_speed;
+	float right_speed   = velocity + tangent_speed;
 
 	if (left_speed > 0 && right_speed > 0 ){
 		motors_set_dir_left(true);
@@ -167,7 +163,7 @@ void motors_update(motion *ctx, float velocity, float omega)
 	}
 }
 
-void motors_stop_all(void)
+void motors_stop_all()
 {
 	motors_enable_all(false);
 

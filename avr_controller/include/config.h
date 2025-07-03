@@ -18,7 +18,6 @@
 #include <stdint.h>
 
 
-
 //----------------------------------------------MOTORS--------------------------------------------------
 
 // Steps per revolution (full-step mode)
@@ -210,5 +209,7 @@
 
 #define MM_PER_ROTATION  (M_PI * WHEEL_DIAMETER_MM)
 #define DEG_PER_MM_DIFF  (180.0f / (M_PI * WHEEL_BASE_MM))
+
+#define LOOP_TIME 10
 
 #endif // CONFIG_H

@@ -25,7 +25,6 @@
 // Receive buffer
 static char rx_buf[RX_BUF_SIZE];
 static uint8_t rx_index = 0;
-static bool profile_requested = false;
 
 // Parsed parameters
 static float rx_distance;     // mm
@@ -37,16 +36,24 @@ static uint16_t rx_last_omega;
 static float rx_lin_acc;     // mm/s
 static float rx_ang_acc; // deg/s
 
+static bool f,b,l,r;
+
 /* -------------------------------  PROTOTYPES ----------------------------*/
 static void timer4_init(void);           /* sets up periodic IRQ            */
-static void send_telemetry(bool emerg); /* heavy USB / sensor work         */
+static void send_telemetry(bool emerg, bool profileDone); /* heavy USB / sensor work         */
 static void usb_send_ram(const char *s);
-static uint8_t parse_jetson_line(const char *line);
+static uint8_t parse_jetson_auto(const char *line);
+static uint8_t parse_jetson_teleop(const char *line);
 static void receive_from_jetson(void);
+
 static void send_debug(void);
+static void send_cmd_echo(void);
 
 /*  ------------------------------ GLOBAL FLAG ------------------------*/
 static volatile uint8_t loop_execute = 0; /* set in ISR, cleared in main */
+
+bool emerg = false;
+bool profile_done = true;
 
 /* ====================================================*/
 int main(void)
@@ -65,22 +72,17 @@ int main(void)
     {
         m_usb_tx_string("IMU Failed\r\n");
     }
-	
-	static motion motions = {
-		.velocity                  = 0.0f,
-		.omega                     = 0.0f,
-	};
 
     /* ---- start 125 Hz timer & enable global IRQs ---- */
     timer4_init(); /* Timer-3 compare-match every 8 ms        */
     sei();         /* global interrupt enable                 */
 
     /* ---------------- MAIN LOOP ---------------------- */
-	
+	motion_reset_drive_system();  //initialize the encoder counts, velocities, omegas, distances, angles to 0
     while (1)
     {	
         /* ---------- Emergency Button press status ---------- */
-        bool emerg = encoder_emergency_hit();
+        emerg = encoder_emergency_hit();
 
         if (loop_execute)
         {
@@ -88,40 +90,26 @@ int main(void)
 			
 			encoder_odometry_update();
 			receive_from_jetson();
-			motors_update(&motions, 250, 10);
-
+			
 			if (!emerg)
 			{
-				if (profile_requested)
+				motion_update(); 
+				
+				if (motion_turn_finished() && motion_move_finished())
 				{
-					// decide pure turn vs straight?line
-					if (fabsf(rx_angle) > 0.01f && fabsf(rx_distance) < 1e-3f)
-					{
-						profiler_turn_init(rx_angle,
-						rx_max_omega,
-						rx_ang_acc);
-					}
-					else
-					{
-						profiler_init(rx_distance,
-						rx_max_vel,
-						rx_lin_acc);
-					}
-					profile_requested = false;
-				}
-
-				if (profiler_turn_is_running())
-				{
-					profiler_turn_update();
-				}
-				else if (profiler_is_running())
-				{
-					profiler_update();
-				}
+					profile_done = true;
+					motors_update(0, 0);	
+				} else{
+					motors_update(motion_velocity(), motion_omega());  
+				}                         
+			}
+			else
+			{
+				motors_stop_all();
 			}
 			
-			send_debug();
-            send_telemetry(emerg);
+			//send_debug();
+            send_telemetry(emerg, profile_done);
         }
 
     }
@@ -129,7 +117,7 @@ int main(void)
 
 /* -------------------- TIMER-4 INITIALISATION (CTC, 50 Hz) --------------------
    16 MHz / 1024 = 15625 Hz
-  15625 Hz × 0.008 s = 125  → OCR4A = 125 ⇒ 125Hz         */
+  15625 Hz × 0.01 s = 156  → OCR4A = 100 ⇒ 100Hz         */
 static void timer4_init(void)
 {
     /* reset all Timer-4 control registers (mandatory for this timer) */
@@ -139,7 +127,7 @@ static void timer4_init(void)
     TCCR4D = 0; // set WGM40 and WGM41 to normal mode
 
     TCNT4 = 0;  /* start from zero                        */
-    OCR4A = 125; /* compare after 125 counts (~8 ms)      */
+    OCR4A = 156; /* compare after 156 counts (~10 ms)      */
 
     TIMSK4 |= _BV(OCIE4A); /* enable Compare-A interrupt             */
 
@@ -155,7 +143,7 @@ ISR(TIMER4_COMPA_vect)
 }
 
 /* ------------------- TELEMETRY SENDER (called from main) ----------------- */
-static void send_telemetry(bool emerg)
+static void send_telemetry(bool emerg, bool profileDone)
 {
     char line[100];
 
@@ -183,7 +171,7 @@ static void send_telemetry(bool emerg)
     /* ---------- Format & ship ---------- */
     /* Packet Structure: { Yaw Roll Pitch encoderLeft encoderRight bat1Voltage bat2Voltage LeftCliff CenterCliff RightCliff emergencyFlag }  */
     snprintf(line, sizeof(line),
-             "%6.2f %6.2f %6.2f %10ld %10ld %u %u %u %u %u %u\r\n", h, r, p, (long)encL, (long)encR, vbat_1, vbat_2, cliffL, cliffC, cliffR, emerg);
+             "%6.2f %6.2f %6.2f %10ld %10ld %u %u %u %u %u %u %u\r\n", h, r, p, (long)encL, (long)encR, vbat_1, vbat_2, cliffL, cliffC, cliffR, emerg, profileDone);
 
     usb_send_ram(line);
     m_usb_tx_push();
@@ -221,7 +209,7 @@ static void usb_send_ram(const char *s)
         m_usb_tx_char(*s++);
 }
 
-static uint8_t parse_jetson_line(const char *line)
+static uint8_t parse_jetson_auto(const char *line)
 {
 
     extern float rx_distance, rx_angle, rx_lin_acc, rx_ang_acc;
@@ -238,22 +226,69 @@ static uint8_t parse_jetson_line(const char *line)
                      &rx_last_omega,
                      &rx_lin_acc,
                      &rx_ang_acc);
-    return (cnt == 8) ? 1 : 0;
+    return cnt;
+}
+
+static uint8_t parse_jetson_teleop(const char *line)
+{
+
+	extern bool f,b,l,r;
+
+	int cnt = sscanf(line, "%u,%u,%u,%u",
+	(unsigned int *)&f, (unsigned int *)&b,
+	(unsigned int *)&l, (unsigned int *)&r);
+	
+	return cnt;
+}
+
+static void send_cmd_echo(void)
+{
+	/* use the existing globals filled by parse_jetson_auto() */
+	extern float    rx_distance,  rx_angle,  rx_lin_acc,  rx_ang_acc;
+	extern uint16_t rx_max_vel,   rx_max_omega,
+	rx_last_vel,  rx_last_omega;
+
+	char buf[150];
+	/* Format:  “CMD d=500.0 a=90.0 vmax=300 wmax=120 vend=0 wend=0 acc=500.0 aacc=360.0” */
+	snprintf(buf, sizeof(buf),
+	"CMD d=%g a=%g vmax=%u wmax=%u vend=%u wend=%u acc=%g aacc=%g\r\n",
+	rx_distance, rx_angle,
+	rx_max_vel, rx_max_omega,
+	rx_last_vel, rx_last_omega,
+	rx_lin_acc, rx_ang_acc);
+
+	usb_send_ram(buf);
+	m_usb_tx_push();
 }
 
 static void receive_from_jetson(void)
 {
     while (m_usb_rx_available())
     {
-        char c = m_usb_rx_char();
+        char c = m_usb_rx_char();   
         // start parsing if new line detected
         if (c == '\n' || c == '\r')
         {
             if (rx_index > 0)
             {
-                rx_buf[rx_index] = '\0';
-                if (parse_jetson_line(rx_buf))
+                rx_buf[rx_index] = '\0';  
+                if (parse_jetson_auto(rx_buf))
                 {
+					//send_cmd_echo();
+					
+					/* linear segment first */
+					motion_start_move(rx_distance,
+					rx_max_vel,
+					rx_last_vel,     // final speed
+					rx_lin_acc);
+
+					/* rotational segment next – if needed */
+					motion_start_turn(rx_angle,
+					rx_max_omega,
+					rx_last_omega,
+					rx_ang_acc);
+					
+					profile_done = false;
                 }
                 rx_index = 0;
             }
