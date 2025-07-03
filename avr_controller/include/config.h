@@ -24,49 +24,48 @@
 // Steps per revolution (full-step mode)
 #define STEPS_PER_REV 200U
 
-// Left motor pins (Arduino Leonardo)
-//  PUL- -> D6  = PD7 / OC1A
-//  DIR- -> D12  = PD6
-//  ENA- -> D5  = PC6  (active High in inverted logic ; HIGH at mcu = signal low at the other side of the optocoupler)
-#define LEFT_PUL_DDR   DDRD
-#define LEFT_PUL_PORT  PORTD
-#define LEFT_PUL_BIT   PD7
+/* ---------- LEFT motor (M1) – now on Timer-3 / OC3A (PC6 / Arduino D5) ---------- */
+//  PUL- -> D5  = PC6 / OC3A
+//  DIR- -> D12 = PD6
+//  ENA- -> D10 = PB6   (active-HIGH in inverted logic)
+#define LEFT_PUL_DDR   DDRC
+#define LEFT_PUL_PORT  PORTC
+#define LEFT_PUL_BIT   PC6   /* OC3A */
 
 #define LEFT_DIR_DDR   DDRD
 #define LEFT_DIR_PORT  PORTD
 #define LEFT_DIR_BIT   PD6
 
-#define LEFT_ENA_DDR   DDRC
-#define LEFT_ENA_PORT  PORTC
-#define LEFT_ENA_BIT   PC6
+#define LEFT_ENA_DDR   DDRB
+#define LEFT_ENA_PORT  PORTB
+#define LEFT_ENA_BIT   PB6
 
-// Right motor pins (Arduino Leonardo)
-//  PUL- -> D9  = PB5 / OC4D
+// Right motor pins (Arduino Leonardo) M2
+//  PUL- -> D9  = PB5 / OC1A
 //  DIR- -> D8  = PB4
-//  ENA- -> Not terminated at header (Change this when PCB arrives) = PB0  (active High; explained above)
+//  ENA- -> D6 = PD7  (active High; explained above)
 #define RIGHT_PUL_DDR   DDRB
 #define RIGHT_PUL_PORT  PORTB
 #define RIGHT_PUL_BIT   PB5
 
-#define RIGHT_DIR_DDR   DDRB
-#define RIGHT_DIR_PORT  PORTB
-#define RIGHT_DIR_BIT   PB4
+#define RIGHT_DIR_DDR   DDRD
+#define RIGHT_DIR_PORT  PORTD
+#define RIGHT_DIR_BIT   PD4
 
-#define RIGHT_ENA_DDR   DDRF
-#define RIGHT_ENA_PORT  PORTF
-#define RIGHT_ENA_BIT   PF7  //for the moment use pin A0 of the Leonardo
+#define RIGHT_ENA_DDR   DDRD
+#define RIGHT_ENA_PORT  PORTD
+#define RIGHT_ENA_BIT   PD7  
 
 #ifndef _BV //this is just to silence the shitty linter in microchip studio
 #define _BV(bit) (1 << (bit))
 #endif
 
-#define CLOCK_DIVISOR 1024U
-#define PRE_SCALE_TIMER1 (_BV(CS12) | _BV(CS10) )
+/* ------------------- timer prescaler / clock divisors --------------------------- */
+#define CLOCK_DIVISOR          1024U
+#define PRE_SCALE_TIMER1       (_BV(CS12) | _BV(CS10))
 
-#define CLOCK_DIVISOR_TIMER4_LOW 2048U
-#define PRE_SCALE_TIMER4_LOW (_BV(CS43)  | _BV(CS42) )
-#define CLOCK_DIVISOR_TIMER4_HIGH 256U
-#define PRE_SCALE_TIMER4_HIGH (_BV(CS43) | _BV(CS40))
+#define CLOCK_DIVISOR_TIMER3   1024U             
+#define PRE_SCALE_TIMER3       (_BV(CS32) | _BV(CS30))
 
 
 
@@ -171,29 +170,45 @@
 #define BAT_DIV_FACTOR_DEN  (1)
 
 
+
 /* ================= ENCODERS (LEFT & RIGHT) ================= */
 
 /* ---- LEFT encoder  ---- */
-#define ENC_L_A_PORT   PORTD
 #define ENC_L_A_DDR    DDRD
+#define ENC_L_A_PORT   PORTD
 #define ENC_L_A_PINREG PIND
-#define ENC_L_A_BIT    2          
+#define ENC_L_A_BIT    2    // PD2 -> INT0 ((D1)
 
-#define ENC_L_B_PORT   PORTD
 #define ENC_L_B_DDR    DDRD
+#define ENC_L_B_PORT   PORTD
 #define ENC_L_B_PINREG PIND
-#define ENC_L_B_BIT    3          
+#define ENC_L_B_BIT    3    // PD3 -> INT1  (D0)
 
-/* ---- RIGHT encoder  ---- */
-#define ENC_R_A_PORT   PORTB
+/* ---- RIGHT encoder ---- */
+#define ENC_R_B_DDR    DDRE
+#define ENC_R_B_PORT   PORTE
+#define ENC_R_B_PINREG PINE
+#define ENC_R_B_BIT    6    // PE6 -> INT6  (D7)
+
 #define ENC_R_A_DDR    DDRB
+#define ENC_R_A_PORT   PORTB
 #define ENC_R_A_PINREG PINB
-#define ENC_R_A_BIT    6            
+#define ENC_R_A_BIT    4   // PB4 -> PCINT4  (D8)
 
-#define ENC_R_B_PORT   PORTB
-#define ENC_R_B_DDR    DDRB
-#define ENC_R_B_PINREG PINB
-#define ENC_R_B_BIT    7        
+/* ---- Emergency button (shared PCINT) ---- */
+#define EMG_BTN_DDR    DDRB
+#define EMG_BTN_PORT   PORTB
+#define EMG_BTN_PINREG PINB
+#define EMG_BTN_BIT    7    // PB7 -> PCINT7 (D11)
 
+/* ================= PROFILER PARAMETERS ================= */
+
+#define ENCODER_PPR         1000U        // quadrature pulses per channel
+#define WHEEL_DIAMETER_MM   200.0f        // wheel diameter [mm]
+#define WHEEL_BASE_MM       500.0f       // track width: distance between wheels [mm] 
+#define GEAR_RATIO 10   
+
+#define MM_PER_ROTATION  (M_PI * WHEEL_DIAMETER_MM)
+#define DEG_PER_MM_DIFF  (180.0f / (M_PI * WHEEL_BASE_MM))
 
 #endif // CONFIG_H

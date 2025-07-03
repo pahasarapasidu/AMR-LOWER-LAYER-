@@ -1,0 +1,11 @@
+	motors_enable_left(true);
+	motors_enable_right(true);
+
+	motors_set_dir_left(true);
+	motors_set_dir_right(false);
+	_delay_ms(2);
+	motors_set_speed_left(100);
+	motors_set_speed_right(100);
+	_delay_ms(10000);
+	
+	motors_stop_all();

@@ -45,7 +45,8 @@ C_SRCS +=  \
 ../src/bno055_ll.c \
 ../src/motors.c \
 ../src/m_usb.c \
-../src/profiler.c
+../src/profiler.c \
+../src/systime.c
 
 
 PREPROCESSING_SRCS += 
@@ -61,7 +62,8 @@ src/encoder.o \
 src/bno055_ll.o \
 src/motors.o \
 src/m_usb.o \
-src/profiler.o
+src/profiler.o \
+src/systime.o
 
 OBJS_AS_ARGS +=  \
 main.o \
@@ -70,7 +72,8 @@ src/encoder.o \
 src/bno055_ll.o \
 src/motors.o \
 src/m_usb.o \
-src/profiler.o
+src/profiler.o \
+src/systime.o
 
 C_DEPS +=  \
 main.d \
@@ -79,7 +82,8 @@ src/encoder.d \
 src/bno055_ll.d \
 src/motors.d \
 src/m_usb.d \
-src/profiler.d
+src/profiler.d \
+src/systime.d
 
 C_DEPS_AS_ARGS +=  \
 main.d \
@@ -88,7 +92,8 @@ src/encoder.d \
 src/bno055_ll.d \
 src/motors.d \
 src/m_usb.d \
-src/profiler.d
+src/profiler.d \
+src/systime.d
 
 OUTPUT_FILE_PATH +=avr_controller.elf
 
@@ -147,6 +152,13 @@ src/m_usb.o: ../src/m_usb.c
 	
 
 src/profiler.o: ../src/profiler.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega32u4 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega32u4" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
+src/systime.o: ../src/systime.c
 	@echo Building file: $<
 	@echo Invoking: AVR/GNU C Compiler : 5.4.0
 	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include" -I"../include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega32u4 -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega32u4" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
