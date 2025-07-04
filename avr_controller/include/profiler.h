@@ -9,47 +9,66 @@
 #define PROFILER_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 
-/** ?? LINEAR (translation) PROFILE ??????????????????????????????????????? */
-/**
- * @brief  Initialise a 1D trapezoidal profile for straight?line motion.
- * @param  distance_mm   total travel distance [mm]
- * @param  max_vel_mm_s  peak velocity [mm/s]
- * @param  acc_mm_s2     accel/decel [mm/s�]
- */
-void profiler_init(float distance_mm,
-                   float max_vel_mm_s,
-                   float acc_mm_s2);
+/* ====================  Profile types =================== */
 
-/**
- * @brief  Must be called repeatedly in your main loop to update motor set-points.
- */
-void profiler_update(void);
+typedef enum {
+	PS_IDLE = 0,
+	PS_ACCELERATING,
+	PS_BRAKING,
+	PS_FINISHED,
+} ProfileState;
 
-/**
- * @brief  Returns true while the linear profile is still running.
- */
-bool profiler_is_running(void);
+typedef enum {
+	PK_FORWARD = 0,
+	PK_ROTATION = 1,
+} ProfileKind;
 
-/** ?? ROTATION (in-place turn) PROFILE ??????????????????????????????????? */
-/**
- * @brief  Initialise an in-place rotation trapezoid.
- * @param  angle_deg         target rotation, + = CCW, � = CW [�]
- * @param  max_omega_deg_s   peak angular speed [�/s]
- * @param  ang_acc_deg_s2    angular accel/decel [�/s�]
- */
-void profiler_turn_init(float angle_deg,
-                        float max_omega_deg_s,
-                        float ang_acc_deg_s2);
+typedef struct {
+	volatile ProfileState state;
+	volatile float        speed;          /* mm/s or deg/s */
+	volatile float        position;       /* mm   or deg   */
 
-/**
- * @brief  Must be called repeatedly in your main loop to update motor set-points.
- */
-void profiler_turn_update(void);
+	int8_t        sign;          /* direction */
+	ProfileKind   kind;          /* forward / rotation */
 
-/**
- * @brief  Returns true while the rotation profile is still running.
- */
-bool profiler_turn_is_running(void);
+	float acceleration;
+	float one_over_acc;
+
+	float target_speed;
+	float final_speed;
+	float final_position;
+} Profile;
+
+/* Forward declaration of Motion aggregate */
+typedef struct {
+	Profile forward;
+	Profile rotation;
+} MotionType;
+
+/* ====================  Profile API =================== */
+void profile_reset(Profile *p);
+void profile_start(Profile *p, float distance, float top_s, float final_s, float acc);
+void profile_stop(Profile *p);
+void profile_update(Profile *p);
+
+/* ====================  Motion facade =================== */
+void  motion_reset_drive_system(void);
+void  motion_stop(void);
+float motion_position(void);
+float motion_velocity(void);
+float motion_acceleration(void);
+void  motion_set_target_velocity(float v);
+float motion_angle(void);
+float motion_omega(void);
+float motion_alpha(void);
+void  motion_start_move(float dist, float top_v, float final_v, float acc);
+bool  motion_move_finished(void);
+void  motion_start_turn(float dist, float top_w, float final_w, float acc);
+bool  motion_turn_finished(void);
+void  motion_update(void);
+void  motion_wait_until_position(float pos_mm);
+void  motion_wait_until_distance(float dist_mm);
 
 #endif // PROFILER_H_

@@ -1,182 +1,186 @@
-/*
- * profiler.c
+/* -----------------------------------------------------------------------------
+ * profiler.c Motion and trapezoidal profile manager
  *
- * Created: 5/21/2025 9:21:21 PM
- *  Author: Endeavor360
- */
+ *
+ * Author   : Endeavor360
+ * Created  : 3rd July 2025
+ * ---------------------------------------------------------------------------*/
 
+#include "config.h"
+#include <avr/io.h>
+#include <util/delay.h>
+#include <stdbool.h>
 #include <math.h>
+#include "motors.h"
 #include "encoder.h"
 #include "profiler.h"
-#include "motors.h"
-#include "config.h"
 
-/*---------------------------- LINEAR PROFILE STATE ----------------------------*/
-static float target_dist_mm;
-static float lin_max_vel;
-static float lin_acc;
-static float lin_counts_per_mm;
-static uint32_t lin_start_steps;
-static bool lin_running;
-
-/*---------------------------- ROTATION PROFILE STATE----------------------------*/
-static float target_wheel_mm;
-static float turn_max_vel;
-static float turn_acc;
-static float turn_counts_per_mm;
-static uint32_t turn_start_left, turn_start_right;
-static bool turn_running;
-static bool turn_ccw;
-
-/*---------------------------- LINEAR PROFILE API ----------------------------*/
-void profiler_init(float distance_mm,
-				   float max_vel_mm_s,
-				   float acc_mm_s2)
+/* ====================  helpers =================== */
+static inline float enc_loop_time_s(void)
 {
-	target_dist_mm = distance_mm;
-	lin_max_vel = max_vel_mm_s;
-	lin_acc = acc_mm_s2;
-
-	/* compute encoder counts per mm */
-	float circ = WHEEL_DIAMETER_MM * M_PI;
-	lin_counts_per_mm = (4.0f * (float)ENCODER_PPR) / circ;
-
-	/* reset & snapshot encoder */
-	lin_start_steps = (encoder_get_left() + encoder_get_right())/2;
-	encoder_reset_both();
-
-	lin_running = true;
+	return (float)encoder_loop_time_us() * 1.0e-6f;
 }
 
-void profiler_update(void)
+static inline float feedback_speed(ProfileKind k)
 {
-	if (!lin_running)
+	return (k == PK_FORWARD) ? encoder_robot_speed_mm_s() : encoder_robot_omega_dps();
+}
+
+static float profile_braking_distance(const Profile *p)
+{
+	return fabsf(p->speed * p->speed - p->final_speed * p->final_speed) * 0.5f * p->one_over_acc;
+}
+
+/* ====================  Profile API =================== */
+void profile_reset(Profile *p)
+{
+	cli();
+	p->position = 0.0f;
+	p->speed = 0.0f;
+	p->target_speed = 0.0f;
+	p->state = PS_IDLE;
+	sei();
+}
+
+void profile_start(Profile *p, float distance, float top_speed, float final_speed, float acceleration)
+{
+	p->sign = (distance < 0.0f) ? -1 : +1;
+	if (distance < 0.0f)
+		distance = -distance;
+
+	if (distance < 1.0f)
+	{
+		p->state = PS_FINISHED;
+		return;
+	}
+
+	if (final_speed > top_speed)
+		final_speed = top_speed;
+
+	p->position = 0.0f;
+	p->final_position = distance;
+
+	p->target_speed = p->sign * fabsf(top_speed);
+	p->final_speed = p->sign * fabsf(final_speed);
+
+	p->acceleration = fabsf(acceleration);
+	p->one_over_acc = (p->acceleration >= 1.0f) ? (1.0f / p->acceleration) : 1.0f;
+
+	p->state = PS_ACCELERATING;
+}
+
+void profile_stop(Profile *p)
+{
+	cli();
+	p->target_speed = 0.0f;
+	p->speed = 0.0f;
+	p->state = PS_FINISHED;
+	sei();
+}
+
+void profile_update(Profile *p)
+{
+	if (p->state == PS_IDLE)
 		return;
 
-	/* distance so far [mm] */
-	uint32_t steps = (encoder_get_left() + encoder_get_right())/2 - lin_start_steps;
-	float dist_mm = steps / lin_counts_per_mm;
+	float dt = enc_loop_time_s();
+	float delta_v = p->acceleration * dt;
+	float remaining = fabsf(p->final_position) - fabsf(p->position);
 
-	/* trapezoid breakpoints */
-	float d_acc = (lin_max_vel * lin_max_vel) / (2.0f * lin_acc);
-	float d_decel = d_acc;
-	float cruise_end = target_dist_mm - d_decel;
-
-	/* compute desired v [mm/s] */
-	float v;
-	if (dist_mm < d_acc)
+	if (p->state == PS_ACCELERATING)
 	{
-		v = sqrtf(2.0f * lin_acc * dist_mm);
-	}
-	else if (dist_mm < cruise_end)
-	{
-		v = lin_max_vel;
-	}
-	else
-	{
-		float rem = target_dist_mm - dist_mm;
-		v = sqrtf(2.0f * lin_acc * rem);
+		if (remaining < profile_braking_distance(p))
+		{
+			p->state = PS_BRAKING;
+			p->target_speed = (p->final_speed == 0.0f)? 0.0f: p->final_speed;
+		}
 	}
 
-	/* convert to RPM */
-	float revs_s = v / (WHEEL_DIAMETER_MM * M_PI);
-	uint16_t rpm = (uint16_t)(revs_s * 60.0f + 0.5f);
-
-	/* command both wheels forward */
-	motors_set_dir_left(true);
-	motors_set_dir_right(true);
-	motors_set_speed_both(rpm, rpm);
-
-	/* done? */
-	if (dist_mm >= target_dist_mm)
+	/* reach target speed */
+	if (p->speed < p->target_speed)
 	{
-		motors_stop_all();
-		lin_running = false;
+		p->speed += delta_v;
+		if (p->speed > p->target_speed)
+			p->speed = p->target_speed;
+	}
+	else if (p->speed > p->target_speed)
+	{
+		p->speed -= delta_v;
+		if (p->speed < p->target_speed)
+			p->speed = p->target_speed;
+	}
+
+	/* integrate position with feedback */
+	float fb_speed = feedback_speed(p->kind);
+	p->position += fb_speed * dt;
+
+	if (p->state != PS_FINISHED && remaining < 0.125f)
+	{
+		p->state = PS_FINISHED;
+		p->target_speed = p->final_speed;
 	}
 }
 
-bool profiler_is_running(void)
+
+
+/* ====================  Motion aggregate =================== */
+MotionType motionType; /* single instance */
+
+
+void motion_reset_drive_system(void)
 {
-	return lin_running;
+	motors_stop_all();
+
+	encoder_odometry_reset();
+	profile_reset(&motionType.forward);
+	profile_reset(&motionType.rotation);
+
+	motors_enable_all(true);
 }
 
-/*---------------------------- ROTATION PROFILE API -------------------------------*/
-void profiler_turn_init(float angle_deg,
-						float max_omega_deg_s,
-						float ang_acc_deg_s2)
+void motion_stop(void) { motors_stop_all(); }
+
+float motion_position(void) { return motionType.forward.position; }
+float motion_velocity(void) { return motionType.forward.speed; }
+float motion_acceleration(void) { return motionType.forward.acceleration; }
+
+void motion_set_target_velocity(float v) { motionType.forward.target_speed = v; }
+
+float motion_angle(void) { return motionType.rotation.position; }
+float motion_omega(void) { return motionType.rotation.speed; }
+float motion_alpha(void) { return motionType.rotation.acceleration; }
+
+bool motion_move_finished(void)      { return motionType.forward.state == PS_FINISHED; }
+bool motion_turn_finished(void) { return motionType.rotation.state == PS_FINISHED; }
+
+void motion_start_move(float distance, float top_v, float final_v, float acc)
 {
-	/* 1) Compute how far each wheel must travel: d = (L/2)*?_rad */
-	float theta = angle_deg * (M_PI / 180.0f);
-	float half_track = WHEEL_BASE_MM * 0.5f;
-	target_wheel_mm = fabsf(half_track * theta);
-	turn_ccw = (angle_deg > 0.0f);
-
-	/* 2) Convert angular ? linear at wheel rim */
-	turn_max_vel = fabsf(max_omega_deg_s * (M_PI / 180.0f) * half_track);
-	turn_acc = fabsf(ang_acc_deg_s2 * (M_PI / 180.0f) * half_track);
-
-	/* 3) Encoder counts per mm (same formula) */
-	float circ = WHEEL_DIAMETER_MM * M_PI;
-	turn_counts_per_mm = (4.0f * (float)ENCODER_PPR) / circ;
-
-	/* 4) Reset & snapshot both encoders */
-	turn_start_left = encoder_get_left();
-	turn_start_right = encoder_get_right();
-	encoder_reset_both();
-	
-	turn_running = true;
+	motionType.forward.kind = PK_FORWARD;  // Add this line
+	profile_start(&motionType.forward, distance, top_v, final_v, acc);
 }
 
-void profiler_turn_update(void)
+void motion_start_turn(float distance, float top_w, float final_w, float acc)
 {
-	if (!turn_running)
-		return;
+	motionType.rotation.kind = PK_ROTATION;  // Add this line
+	profile_start(&motionType.rotation, distance, top_w, final_w, acc);
+}
 
-	/* average wheel travel [mm] */
-	uint32_t sl = motors_get_step_count_left() - turn_start_left;
-	uint32_t sr = motors_get_step_count_right() - turn_start_right;
-	float dl = sl / turn_counts_per_mm;
-	float dr = sr / turn_counts_per_mm;
-	float d = (dl + dr) * 0.5f;
+void motion_update(void)
+{
+	profile_update(&motionType.forward);
+	profile_update(&motionType.rotation);
+}
 
-	/* trapezoid breakpoints */
-	float d_acc = (turn_max_vel * turn_max_vel) / (2.0f * turn_acc);
-	float d_decel = d_acc;
 
-	/* desired v [mm/s] */
-	float v;
-	if (d < d_acc)
+void motion_wait_until_position(float position_mm)
+{
+	while (motion_position() < position_mm)
 	{
-		v = sqrtf(2.0f * turn_acc * d);
-	}
-	else if (d < (target_wheel_mm - d_decel))
-	{
-		v = turn_max_vel;
-	}
-	else
-	{
-		float rem = target_wheel_mm - d;
-		v = sqrtf(2.0f * turn_acc * rem);
-	}
-
-	/* convert to RPM */
-	float revs_s = v / (WHEEL_DIAMETER_MM * M_PI);
-	uint16_t rpm = (uint16_t)(revs_s * 60.0f + 0.5f);
-
-	/* opposite wheel dirs for in-place turn */
-	motors_set_dir_left(!turn_ccw);
-	motors_set_dir_right(turn_ccw);
-	motors_set_speed_both(rpm, rpm);
-
-	/* done? */
-	if (d >= target_wheel_mm)
-	{
-		motors_stop_all();
-		turn_running = false;
+		_delay_ms(LOOP_TIME);
 	}
 }
 
-bool profiler_turn_is_running(void)
+void motion_wait_until_distance(float distance_mm)
 {
-	return turn_running;
+	motion_wait_until_position(motion_position() + distance_mm);
 }
