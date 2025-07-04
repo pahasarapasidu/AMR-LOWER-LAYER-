@@ -36,7 +36,20 @@ static uint16_t rx_last_omega;
 static float rx_lin_acc; // mm/s
 static float rx_ang_acc; // deg/s
 
-static uint16_t control_mode = false; // autonomous
+
+typedef enum{
+	AUTONOMOUS = 0,
+	TELEOPERATOR = 1,
+} controlMode;
+static uint8_t control_mode = AUTONOMOUS; 
+
+typedef enum{
+	DEBUG_OFF = 0,
+	MOTION_DEBUG = 1,
+	RX_ECHO =2,
+	MD_AND_ECHO = 3,
+} debugMode;
+static uint8_t debug_mode = MOTION_DEBUG; 
 
 static bool f, b, l, r;
 
@@ -44,7 +57,7 @@ static bool f, b, l, r;
 static void timer4_init(void);                            /* sets up periodic IRQ            */
 static void send_telemetry(bool emerg, bool profileDone); /* heavy USB / sensor work         */
 static void usb_send_ram(const char *s);
-static uint8_t parse_jetson_auto(const char *line);
+static uint8_t parse_jetson(const char *line);
 static void receive_from_jetson(void);
 
 static void send_debug(void);
@@ -132,8 +145,9 @@ int main(void)
             {
                 motors_stop_all();
             }
+			
+			if (debug_mode == MOTION_DEBUG || debug_mode == MD_AND_ECHO) {send_debug();}
 
-            send_debug();
             send_telemetry(emerg, profile_done);
         }
     }
@@ -222,6 +236,27 @@ static void send_debug(void)
     m_usb_tx_push();
 }
 
+// just for debugging
+static void send_cmd_echo(void)
+{
+	/* use the existing globals filled by parse_jetson_auto() */
+	extern float rx_distance, rx_angle, rx_lin_acc, rx_ang_acc;
+	extern uint16_t rx_max_vel, rx_max_omega,
+	rx_last_vel, rx_last_omega;
+
+	char buf[150];
+	/* Format:  “CMD d=500.0 a=90.0 vmax=300 wmax=120 vend=0 wend=0 acc=500.0 aacc=360.0” */
+	snprintf(buf, sizeof(buf),
+	"CMD d=%g a=%g vmax=%u wmax=%u vend=%u wend=%u acc=%g aacc=%g\r\n",
+	rx_distance, rx_angle,
+	rx_max_vel, rx_max_omega,
+	rx_last_vel, rx_last_omega,
+	rx_lin_acc, rx_ang_acc);
+
+	usb_send_ram(buf);
+	m_usb_tx_push();
+}
+
 /* ------------------- Tiny helper ------------------------- */
 static void usb_send_ram(const char *s)
 {
@@ -229,19 +264,21 @@ static void usb_send_ram(const char *s)
         m_usb_tx_char(*s++);
 }
 
-static uint8_t parse_jetson_auto(const char *line)
+static uint8_t parse_jetson(const char *line)
 {
 
     extern float rx_distance, rx_angle, rx_lin_acc, rx_ang_acc;
-    extern uint16_t control_mode,  rx_max_vel, rx_max_omega, rx_last_vel, rx_last_omega;
+    extern uint16_t rx_max_vel, rx_max_omega, rx_last_vel, rx_last_omega;
     extern bool f, b, l, r;
-
+	extern uint8_t control_mode, debug_mode;
+	
     uint16_t temp1, temp2, temp3, temp4;
 
     // Note: "%f" for floats, "%u" for uint16_t on AVR
     int cnt = sscanf(line,
-                     "%u,%f,%f,%u,%u,%u,%u,%f,%f",
+                     "%hhu,%hhu,%f,%f,%u,%u,%u,%u,%f,%f",
                      &control_mode,
+					 &debug_mode,
                      &rx_distance,
                      &rx_angle,
                      &temp1,
@@ -251,14 +288,14 @@ static uint8_t parse_jetson_auto(const char *line)
                      &rx_lin_acc,
                      &rx_ang_acc);
 
-    if (control_mode == 0)
+    if (control_mode == AUTONOMOUS)
     {
         rx_max_vel = temp1;
         rx_max_omega = temp2;
         rx_last_vel = temp3;
         rx_last_omega = temp4;
     }
-    else
+    else if (control_mode == TELEOPERATOR)
     {
         f = temp1;
         b = temp2;
@@ -280,8 +317,11 @@ static void receive_from_jetson(void)
             if (rx_index > 0)
             {
                 rx_buf[rx_index] = '\0';
-                if (parse_jetson_auto(rx_buf))
+                if (parse_jetson(rx_buf))
                 {
+					
+					if (debug_mode == RX_ECHO || debug_mode ==MD_AND_ECHO) {send_cmd_echo();}
+						
                     if (rx_distance != 0 && rx_angle != 0)
                     {
                         determineFinishnes = BOTH;
@@ -316,25 +356,4 @@ static void receive_from_jetson(void)
             rx_buf[rx_index++] = c;
         }
     }
-}
-
-// just for debugging
-static void send_cmd_echo(void)
-{
-    /* use the existing globals filled by parse_jetson_auto() */
-    extern float rx_distance, rx_angle, rx_lin_acc, rx_ang_acc;
-    extern uint16_t rx_max_vel, rx_max_omega,
-        rx_last_vel, rx_last_omega;
-
-    char buf[150];
-    /* Format:  “CMD d=500.0 a=90.0 vmax=300 wmax=120 vend=0 wend=0 acc=500.0 aacc=360.0” */
-    snprintf(buf, sizeof(buf),
-             "CMD d=%g a=%g vmax=%u wmax=%u vend=%u wend=%u acc=%g aacc=%g\r\n",
-             rx_distance, rx_angle,
-             rx_max_vel, rx_max_omega,
-             rx_last_vel, rx_last_omega,
-             rx_lin_acc, rx_ang_acc);
-
-    usb_send_ram(buf);
-    m_usb_tx_push();
 }

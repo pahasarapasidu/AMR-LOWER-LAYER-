@@ -25,7 +25,7 @@ TIMEOUT   = 0.02                       # serial read timeout (s)
 # Edit / extend this list to build any path you like.
 CMD_SEQUENCE: List[Tuple[float, float, int, int, int, int, float, float]] = [
     ( 5000.0,   0.0, 300,   0,   0,   0, 500.0,  0.0),  # drive 0.5 m
-    (   0.0,  90.0,   0, 120,   0,   0,   0.0, 360.0), # turn 90 °
+    (   0.0,  500.0,   0, 120,   0,   0,   0.0, 360.0), # turn 90 °
     ( 700.0,   0.0, 350,   0,   0,   0, 600.0,  0.0),
     (   0.0, -90.0,   0, 120,   0,   0,   0.0, 360.0),
 ]

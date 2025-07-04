@@ -26,8 +26,8 @@ import serial.tools.list_ports      # for auto-detect (optional)
 #  final_v_mm_s, final_w_dps, lin_acc_mm_s2, ang_acc_dps2)
 COMMAND_SEQUENCE: List[Tuple[float, float, int, int, int, int, float, float]] = [
     (5000.0,   0.0, 300,   0,   0,   0, 500.0,  0.0),
-    (  0.0,  900.0,   0, 60,   0,   0,   0.0, 120.0),
-    (700.0,   0.0, 350,   0,   0,   0, 600.0,  0.0),
+    (  0.0,  360.0,   0, 30,   0,   0,   0.0, 10.0),
+    (7000.0,   0.0, 350,   0,   0,   0, 600.0,  0.0),
     (  0.0, -900.0,   0, 60,   0,   0,   0.0, 120.0),
 ]
 
